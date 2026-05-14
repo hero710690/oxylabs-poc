@@ -53,7 +53,7 @@ def _parse_search_response(response: dict, offset: int) -> List[SearchResult]:
     results = []
     content = response["results"][0]["content"]["results"]
 
-    # Parse organic results
+    # Parse organic results (some may be marked as sponsored within organic)
     for item in content.get("organic", []):
         results.append(
             SearchResult(
@@ -62,7 +62,7 @@ def _parse_search_response(response: dict, offset: int) -> List[SearchResult]:
                 title=item.get("title", ""),
                 price=item.get("price"),
                 currency=item.get("currency"),
-                is_sponsored=False,
+                is_sponsored=item.get("is_sponsored", False),
                 url=f"https://www.amazon.com/dp/{item['asin']}",
             )
         )

@@ -14,11 +14,11 @@ ASYNC_URL = "https://data.oxylabs.io/v1/queries"
 # Search config
 SEARCH_QUERY = "iPhone"
 SEARCH_DOMAIN = "com"
-SEARCH_PAGES = 3  # ~48 results/page → 100+ listings
+SEARCH_PAGES = 7  # ~16-20 results/page → 100+ listings
 RESULTS_LIMIT = 100
 
-# FEATURE: geo_location — lock results to US market
-GEO_LOCATION = "United States"
+# FEATURE: geo_location — lock results to US market (Oxylabs uses ZIP codes)
+GEO_LOCATION = "90210"
 
 # Batch config
 BATCH_SIZE = 10  # product pages per batch

@@ -86,7 +86,7 @@ def _poll_until_done(
     timeout: int = config.POLL_TIMEOUT,
     interval: int = config.POLL_INTERVAL,
 ) -> dict:
-    """Poll an async job until status is 'done' or timeout."""
+    """Poll an async job until status is 'done', then fetch results."""
     start_time = time.time()
 
     while True:
@@ -94,7 +94,8 @@ def _poll_until_done(
         status = result.get("status")
 
         if status == "done":
-            return result
+            # FEATURE: Async results retrieval — separate endpoint for job results
+            return client.async_get_results(job_id)
         if status == "faulted":
             raise RuntimeError(f"Job {job_id} faulted: {result}")
 
@@ -109,14 +110,31 @@ def _parse_product_response(response: dict) -> Optional[ProductData]:
     """Parse Oxylabs product response into ProductData model."""
     try:
         content = response["results"][0]["content"]
+
+        # Extract delivery info as a readable string
+        delivery_raw = content.get("delivery", [])
+        delivery_str = None
+        if delivery_raw and isinstance(delivery_raw, list):
+            parts = []
+            for d in delivery_raw:
+                dtype = d.get("type", "")
+                date_by = d.get("date", {}).get("by", "")
+                parts.append(f"{dtype} {date_by}".strip())
+            delivery_str = " | ".join(parts) if parts else None
+
+        # Description can sometimes be a list (image URLs) instead of string
+        description = content.get("description")
+        if isinstance(description, list):
+            description = None
+
         return ProductData(
             title=content.get("title", "Unknown"),
             price=content.get("price"),
             currency=content.get("currency"),
-            description=content.get("description"),
-            specifications=content.get("specifications"),
-            is_prime=content.get("is_prime", False),
-            delivery=content.get("delivery_info"),
+            description=description,
+            specifications=content.get("product_details"),
+            is_prime=content.get("is_prime_eligible", False),
+            delivery=delivery_str,
         )
     except (KeyError, IndexError) as e:
         logger.warning(f"Failed to parse product response: {e}")

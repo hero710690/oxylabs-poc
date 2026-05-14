@@ -4,9 +4,12 @@ from scraper.product import scrape_products, _poll_until_done
 from models import SearchResult, ProductData
 
 
-MOCK_PRODUCT_RESPONSE = {
+MOCK_POLL_RESPONSE = {
     "id": "job_001",
     "status": "done",
+}
+
+MOCK_RESULTS_RESPONSE = {
     "results": [
         {
             "content": {
@@ -14,9 +17,11 @@ MOCK_PRODUCT_RESPONSE = {
                 "price": 301.49,
                 "currency": "USD",
                 "description": "This phone has been restored.",
-                "specifications": {"brand": "Apple", "storage": "128GB", "color": "Midnight"},
-                "is_prime": True,
-                "delivery_info": "FREE delivery Tomorrow, March 4",
+                "product_details": {"brand": "Apple", "storage": "128GB", "color": "Midnight"},
+                "is_prime_eligible": True,
+                "delivery": [
+                    {"type": "FREE delivery", "date": {"by": "Tomorrow, March 4"}}
+                ],
             }
         }
     ],
@@ -37,9 +42,11 @@ def _make_search_result(asin: str, position: int) -> SearchResult:
 
 def test_poll_until_done_returns_on_done():
     mock_client = MagicMock()
-    mock_client.async_poll.return_value = {"id": "job_001", "status": "done", "results": []}
+    mock_client.async_poll.return_value = MOCK_POLL_RESPONSE
+    mock_client.async_get_results.return_value = MOCK_RESULTS_RESPONSE
     result = _poll_until_done(mock_client, "job_001", timeout=10, interval=0.01)
-    assert result["status"] == "done"
+    assert "results" in result
+    mock_client.async_get_results.assert_called_once_with("job_001")
 
 
 def test_poll_until_done_retries_on_pending():
@@ -47,17 +54,19 @@ def test_poll_until_done_retries_on_pending():
     mock_client.async_poll.side_effect = [
         {"id": "job_001", "status": "pending"},
         {"id": "job_001", "status": "running"},
-        {"id": "job_001", "status": "done", "results": []},
+        {"id": "job_001", "status": "done"},
     ]
+    mock_client.async_get_results.return_value = MOCK_RESULTS_RESPONSE
     result = _poll_until_done(mock_client, "job_001", timeout=30, interval=0.01)
-    assert result["status"] == "done"
+    assert "results" in result
     assert mock_client.async_poll.call_count == 3
 
 
 def test_scrape_products_batches_requests():
     mock_client = MagicMock()
     mock_client.async_submit.return_value = {"id": "job_001", "status": "pending"}
-    mock_client.async_poll.return_value = MOCK_PRODUCT_RESPONSE
+    mock_client.async_poll.return_value = MOCK_POLL_RESPONSE
+    mock_client.async_get_results.return_value = MOCK_RESULTS_RESPONSE
 
     search_results = [_make_search_result(f"B0TEST{i:03d}", i) for i in range(1, 21)]
     products = scrape_products(search_results, client=mock_client, batch_size=10)
@@ -69,7 +78,8 @@ def test_scrape_products_batches_requests():
 def test_scrape_products_returns_product_data():
     mock_client = MagicMock()
     mock_client.async_submit.return_value = {"id": "job_001", "status": "pending"}
-    mock_client.async_poll.return_value = MOCK_PRODUCT_RESPONSE
+    mock_client.async_poll.return_value = MOCK_POLL_RESPONSE
+    mock_client.async_get_results.return_value = MOCK_RESULTS_RESPONSE
 
     search_results = [_make_search_result("B0TEST001", 1)]
     products = scrape_products(search_results, client=mock_client, batch_size=10)

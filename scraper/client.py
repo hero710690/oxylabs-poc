@@ -58,3 +58,11 @@ class OxylabsClient:
         response = requests.get(url, auth=self.auth, timeout=30)
         response.raise_for_status()
         return response.json()
+
+    # FEATURE: Async results retrieval — fetch completed job results
+    def async_get_results(self, job_id: str) -> dict:
+        """Fetch results for a completed async job."""
+        url = f"{config.ASYNC_URL}/{job_id}/results"
+        response = requests.get(url, auth=self.auth, timeout=60)
+        response.raise_for_status()
+        return response.json()
