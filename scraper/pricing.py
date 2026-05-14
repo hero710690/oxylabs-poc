@@ -71,18 +71,25 @@ def _parse_pricing_response(response: dict) -> List[PricingOffer]:
     offers = []
     try:
         content = response["results"][0]["content"]
-        raw_offers = content.get("product_pricing", [])
+        raw_offers = content.get("pricing", [])
 
         for item in raw_offers:
+            # Detect Prime from delivery options
+            delivery_options = item.get("delivery_options", [])
+            has_prime = any("prime" in (d.get("type", "")).lower() for d in delivery_options)
+            # Detect FBA from delivery field
+            delivery_from = item.get("delivery", "")
+            is_fba = "amazon" in delivery_from.lower() if delivery_from else False
+
             offers.append(
                 PricingOffer(
-                    seller_name=item.get("seller_name"),
+                    seller_name=delivery_from,
                     price=item.get("price"),
                     currency=item.get("currency"),
                     condition=item.get("condition"),
-                    shipping_price=item.get("shipping_price"),
-                    is_prime=item.get("is_prime", False),
-                    is_fulfilled_by_amazon=item.get("is_fulfilled_by_amazon", False),
+                    shipping_price=item.get("price_shipping"),
+                    is_prime=has_prime,
+                    is_fulfilled_by_amazon=is_fba,
                 )
             )
     except (KeyError, IndexError) as e:
