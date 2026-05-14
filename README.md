@@ -10,8 +10,9 @@ Built for **TechNovaAI** — a prospective client entering the U.S. smartphone r
 Scheduler triggers hourly run
   → Phase 1: Paginated amazon_search (7 pages → 100 listings)
   → Phase 2: Batch async amazon_product (10 at a time, poll for results)
+  → Phase 3: amazon_pricing for top 5 ASINs (all seller offers)
   → Validate with Pydantic models
-  → Merge search metadata + product page data
+  → Merge search metadata + product page data + pricing intelligence
   → Write timestamped JSON to output/
 ```
 
@@ -21,14 +22,17 @@ Scheduler triggers hourly run
 |---|---------|-------|---------|
 | 1 | `amazon_search` source | `scraper/search.py` | Paginated search results for "iPhone" |
 | 2 | `amazon_product` source | `scraper/product.py` | Individual product page data extraction |
-| 3 | `parse: true` | Both phases | Structured auto-parsed JSON (no HTML parsing) |
-| 4 | `geo_location` | Both phases | Lock results to US market (ZIP code) |
-| 5 | Pagination (`start_page`) | `scraper/search.py` | Collect 100 results across multiple pages |
-| 6 | Async/Polling mode | `scraper/product.py` | Non-blocking batch product scraping |
-| 7 | Async/Callback mode | `scraper/callback.py` | Documented alternative (webhook-based) |
-| 8 | Batch submission | `scraper/product.py` | Process 100 products in chunks of 10 |
-| 9 | Realtime endpoint | `scraper/client.py` | Synchronous search requests |
-| 10 | Async endpoint | `scraper/client.py` | Background job submission + results retrieval |
+| 3 | `amazon_pricing` source | `scraper/pricing.py` | All seller offers for an ASIN (price intelligence) |
+| 4 | `parse: true` | All scraper modules | Structured auto-parsed JSON (no HTML parsing) |
+| 5 | `geo_location` | All scraper modules | Lock results to US market (ZIP code) |
+| 6 | Pagination (`start_page`) | `scraper/search.py` | Collect 100 results across 7 pages |
+| 7 | Async/Polling mode | `scraper/product.py` | Non-blocking batch product scraping |
+| 8 | Async/Callback mode | `scraper/callback.py` | Documented alternative (webhook-based) |
+| 9 | Batch submission | `scraper/product.py` | Process 100 products in chunks of 10 |
+| 10 | Realtime endpoint | `scraper/client.py` | Synchronous search + pricing requests |
+| 11 | Async endpoint | `scraper/client.py` | Background job submission + results retrieval |
+| 12 | `context: autoselect_variant` | `scraper/product.py` | Accurate buybox pricing for variant products |
+| 13 | Async results retrieval | `scraper/client.py` | Fetch completed job results from separate endpoint |
 
 See [docs/FEATURES.md](docs/FEATURES.md) for detailed explanations of each feature.
 
@@ -41,6 +45,11 @@ See [docs/FEATURES.md](docs/FEATURES.md) for detailed explanations of each featu
 - Prime eligibility
 - Sponsored vs. organic
 - Delivery details
+- Rating & review count
+- Sales rank & sales volume
+- Best Seller / Amazon's Choice badges
+- Brand & coupon info
+- **Pricing intelligence** (top 5): all seller offers with condition, shipping, FBA status
 
 ## Quick Start
 
@@ -74,9 +83,10 @@ oxylabs-poc/
 │   ├── client.py              # Oxylabs API wrapper (retry, async)
 │   ├── search.py              # Phase 1: paginated search
 │   ├── product.py             # Phase 2: batch async product pages
+│   ├── pricing.py             # Phase 3: multi-seller pricing
 │   └── callback.py            # Callback mode (documented alternative)
-├── output/                    # Timestamped JSON outputs
-├── tests/                     # Unit tests (18 tests)
+├── output/                    # Timestamped JSON outputs + analysis
+├── tests/                     # Unit tests
 └── docs/
     ├── FEATURES.md            # Feature → code mapping
     ├── PRICING.md             # Cost breakdown + plan recommendation
@@ -127,6 +137,6 @@ pytest tests/ -v
 ## Documentation
 
 - [FEATURES.md](docs/FEATURES.md) — Detailed feature usage guide
-- [PRICING.md](docs/PRICING.md) — Cost calculation (~$222/month) and plan recommendation
+- [PRICING.md](docs/PRICING.md) — Cost calculation (~$242/month) and plan recommendation
 - [FEEDBACK.md](docs/FEEDBACK.md) — Developer experience feedback for Oxylabs
 - [PRESENTATION_NOTES.md](docs/PRESENTATION_NOTES.md) — Demo agenda and talking points
