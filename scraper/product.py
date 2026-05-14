@@ -47,12 +47,16 @@ def _process_batch(client: OxylabsClient, batch: List[SearchResult]) -> Dict[str
         # FEATURE: parse: true — structured auto-parsed output
         # FEATURE: geo_location — US market
         # FEATURE: Async/Polling mode — non-blocking product scraping
+        # FEATURE: context/autoselect_variant — accurate buybox pricing for variant products
         payload = {
             "source": "amazon_product",
             "query": item.asin,
             "domain": config.SEARCH_DOMAIN,
             "parse": True,
             "geo_location": config.GEO_LOCATION,
+            "context": [
+                {"key": "autoselect_variant", "value": True},
+            ],
         }
 
         try:
@@ -135,6 +139,11 @@ def _parse_product_response(response: dict) -> Optional[ProductData]:
             specifications=content.get("product_details"),
             is_prime=content.get("is_prime_eligible", False),
             delivery=delivery_str,
+            rating=content.get("rating"),
+            reviews_count=content.get("reviews_count"),
+            sales_rank=content.get("sales_rank"),
+            brand=content.get("brand"),
+            coupon=content.get("coupon") or None,
         )
     except (KeyError, IndexError) as e:
         logger.warning(f"Failed to parse product response: {e}")

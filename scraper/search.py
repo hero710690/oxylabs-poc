@@ -63,6 +63,12 @@ def _parse_search_response(response: dict, offset: int) -> List[SearchResult]:
                 price=item.get("price"),
                 currency=item.get("currency"),
                 is_sponsored=item.get("is_sponsored", False),
+                is_prime=item.get("is_prime", False),
+                rating=item.get("rating"),
+                reviews_count=item.get("reviews_count"),
+                is_best_seller=item.get("best_seller", False),
+                is_amazons_choice=item.get("is_amazons_choice", False),
+                sales_volume=item.get("sales_volume"),
                 url=f"https://www.amazon.com/dp/{item['asin']}",
             )
         )
@@ -77,6 +83,12 @@ def _parse_search_response(response: dict, offset: int) -> List[SearchResult]:
                 price=item.get("price"),
                 currency=item.get("currency"),
                 is_sponsored=True,
+                is_prime=item.get("is_prime", False),
+                rating=item.get("rating"),
+                reviews_count=item.get("reviews_count"),
+                is_best_seller=item.get("best_seller", False),
+                is_amazons_choice=item.get("is_amazons_choice", False),
+                sales_volume=item.get("sales_volume"),
                 url=f"https://www.amazon.com/dp/{item['asin']}",
             )
         )

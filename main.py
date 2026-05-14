@@ -9,6 +9,7 @@ from apscheduler.schedulers.blocking import BlockingScheduler
 from scraper.client import OxylabsClient
 from scraper.search import search_iphones
 from scraper.product import scrape_products
+from scraper.pricing import get_pricing
 from models import SearchResult, ProductData, ScrapedProduct
 from typing import Dict
 import config
@@ -39,6 +40,20 @@ def run_scrape_job() -> List[ScrapedProduct]:
     merged = _merge_results(search_results, product_data)
     logger.info(f"Merged {len(merged)} complete product records")
 
+    # Phase 3: Pricing for top 5 products (demo of amazon_pricing source)
+    logger.info("Phase 3: Fetching seller pricing for top 5 listings...")
+    top_asins = [r.asin for r in search_results[:5]]
+    for asin in top_asins:
+        try:
+            offers = get_pricing(asin, client=client)
+            for product in merged:
+                if product.asin == asin:
+                    product.pricing_offers = offers
+                    break
+            logger.info(f"  ASIN {asin}: {len(offers)} seller offers")
+        except Exception as e:
+            logger.warning(f"  ASIN {asin}: pricing failed - {e}")
+
     return merged
 
 
@@ -66,6 +81,14 @@ def _merge_results(
                     description=product.description,
                     specifications=product.specifications,
                     delivery=product.delivery,
+                    rating=product.rating or search.rating,
+                    reviews_count=product.reviews_count or search.reviews_count,
+                    sales_rank=product.sales_rank,
+                    brand=product.brand,
+                    coupon=product.coupon,
+                    is_best_seller=search.is_best_seller,
+                    is_amazons_choice=search.is_amazons_choice,
+                    sales_volume=search.sales_volume,
                     url=search.url,
                 )
             )
@@ -78,10 +101,15 @@ def _merge_results(
                     price=search.price,
                     currency=search.currency,
                     is_sponsored=search.is_sponsored,
-                    is_prime=False,
+                    is_prime=search.is_prime,
                     description=None,
                     specifications=None,
                     delivery=None,
+                    rating=search.rating,
+                    reviews_count=search.reviews_count,
+                    is_best_seller=search.is_best_seller,
+                    is_amazons_choice=search.is_amazons_choice,
+                    sales_volume=search.sales_volume,
                     url=search.url,
                 )
             )

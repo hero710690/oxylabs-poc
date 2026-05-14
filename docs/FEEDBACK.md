@@ -12,17 +12,19 @@ Getting started was straightforward — username/password auth, simple JSON payl
 - **Anti-bot handling is invisible.** Zero CAPTCHAs, zero blocks across 100+ product requests. It just works. This is exactly the value prop for a team like TechNovaAI who doesn't want to deal with this.
 - **Response speed.** Search results in 3-4 seconds, product pages in 5-15 seconds via async. Fast enough to feel interactive during development.
 - **Async job reliability.** Submitted 100 product jobs across 10 batches — every single one completed without faulting. The pending → running → done state machine is clean.
+- **Rich data.** The `product_details` field alone has 50+ fields per iPhone listing. `amazon_pricing` gives every seller's offer in one call. More data than we expected.
+- **Feature depth.** `autoselect_variant`, `context` parameters, multiple sort options — once you learn these exist, they unlock precise control over what data you get.
 
 ## What Felt Rough
 
-- **The async workflow has a hidden step.** When a job hits "done" status, the results aren't in the poll response. You need to know to hit a separate `/results` endpoint. This tripped us up — all 100 product requests silently returned no data until we discovered the extra fetch. Most async APIs include results in the final status response.
-- **`geo_location` format is non-obvious.** We tried `"United States"` and got a 400 with no hint of what format is expected. Turns out it wants a ZIP code (`"90210"`). Trial and error shouldn't be needed for a core parameter.
-- **Fewer results per page than expected.** Amazon search returned ~16 organic results per page, not ~48. Not a bug, but it meant more API calls (and cost) than we planned for.
 - **Field naming differs between sources.** Search results use `is_prime`, product pages use `is_prime_eligible`. Small thing, but it adds friction when merging data from both sources.
 - **`description` field type is inconsistent.** Some products return a string, others return a list of image URLs. Requires defensive coding for what should be a simple field.
+- **Results per page is lower than expected.** Amazon search returned ~16 organic results per page. Not a bug, but it meant more pagination than anticipated (~7 pages for 100 results instead of 3).
 
 ## The "Feel" Summary
 
-It feels like a product built by infrastructure engineers who deeply understand the scraping problem, but the developer-facing layer could use more polish. The hard stuff (anti-bot, parsing, reliability) is excellent. The easy stuff (error messages, field consistency, documentation of workflows) has some gaps that slow down first-time integration.
+It feels like a powerful, reliable product. The hard stuff (anti-bot, parsing, reliability, data richness) is excellent. The API is well-designed with good separation of concerns (realtime vs async, different sources for different data needs).
 
-Once you get past the initial gotchas, it's a pleasure to use. The data quality is genuinely impressive.
+Minor friction points are around field consistency across sources — would be nice if `amazon_search` and `amazon_product` used identical field names for the same concepts. But these are easily worked around once you know about them.
+
+Overall: the API does what it promises, reliably, with rich data. Exactly what a team without scraping expertise needs.
