@@ -10,6 +10,7 @@ from scraper.client import OxylabsClient
 from scraper.search import search_iphones
 from scraper.product import scrape_products
 from models import SearchResult, ProductData, ScrapedProduct
+from typing import Dict
 import config
 
 logging.basicConfig(
@@ -43,27 +44,47 @@ def run_scrape_job() -> List[ScrapedProduct]:
 
 def _merge_results(
     search_results: List[SearchResult],
-    product_data: List[ProductData],
+    product_data: Dict[str, ProductData],
 ) -> List[ScrapedProduct]:
-    """Merge search-level metadata with product page data."""
+    """Merge search-level metadata with product page data.
+    Always returns all search results — uses product data when available,
+    falls back to search-level data otherwise."""
     merged = []
 
-    for i, (search, product) in enumerate(zip(search_results, product_data)):
-        merged.append(
-            ScrapedProduct(
-                position=search.position,
-                asin=search.asin,
-                title=product.title or search.title,
-                price=product.price or search.price,
-                currency=product.currency or search.currency,
-                is_sponsored=search.is_sponsored,
-                is_prime=product.is_prime,
-                description=product.description,
-                specifications=product.specifications,
-                delivery=product.delivery,
-                url=search.url,
+    for search in search_results:
+        product = product_data.get(search.asin)
+        if product:
+            merged.append(
+                ScrapedProduct(
+                    position=search.position,
+                    asin=search.asin,
+                    title=product.title or search.title,
+                    price=product.price or search.price,
+                    currency=product.currency or search.currency,
+                    is_sponsored=search.is_sponsored,
+                    is_prime=product.is_prime,
+                    description=product.description,
+                    specifications=product.specifications,
+                    delivery=product.delivery,
+                    url=search.url,
+                )
             )
-        )
+        else:
+            merged.append(
+                ScrapedProduct(
+                    position=search.position,
+                    asin=search.asin,
+                    title=search.title,
+                    price=search.price,
+                    currency=search.currency,
+                    is_sponsored=search.is_sponsored,
+                    is_prime=False,
+                    description=None,
+                    specifications=None,
+                    delivery=None,
+                    url=search.url,
+                )
+            )
 
     return merged
 

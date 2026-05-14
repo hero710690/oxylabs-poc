@@ -85,6 +85,7 @@ def test_scrape_products_returns_product_data():
     products = scrape_products(search_results, client=mock_client, batch_size=10)
 
     assert len(products) == 1
-    assert products[0].title == "Apple iPhone 14, 128GB, Midnight - Unlocked (Renewed)"
-    assert products[0].price == 301.49
-    assert products[0].is_prime is True
+    assert "B0TEST001" in products
+    assert products["B0TEST001"].title == "Apple iPhone 14, 128GB, Midnight - Unlocked (Renewed)"
+    assert products["B0TEST001"].price == 301.49
+    assert products["B0TEST001"].is_prime is True

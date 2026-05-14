@@ -1,63 +1,28 @@
 # Product & Developer Feedback
 
-Feedback collected during PoC implementation for the Oxylabs product team.
+Feedback on the developer experience of using Oxylabs Web Scraper API, collected during PoC implementation.
 
-## API Usability / Developer Experience
+## First Impressions
 
-### geo_location parameter format
-- **Issue:** The `geo_location` parameter for Amazon sources does not accept country names like `"United States"`. It requires a US ZIP code (e.g., `"90210"`).
-- **Impact:** We got a `400 Bad Request` with message `"geo_location 'United States' is not valid."` — no guidance on what format is expected.
-- **Suggestion:** Either accept country names as aliases, or include expected format in the error message (e.g., "Use a 5-digit US ZIP code for Amazon US").
+Getting started was straightforward — username/password auth, simple JSON payloads, and the realtime endpoint gave instant results. The mental model is easy to grasp: pick a source, send a query, get structured data back. Felt productive within minutes.
 
-### Async results require separate endpoint
-- **Issue:** After polling shows status `"done"`, the results are NOT included in the poll response. You must make an additional GET to `{job_id}/results`.
-- **Impact:** Our initial implementation expected results in the poll response (like many other async APIs). This caused all product scraping to silently fail with `KeyError: 'results'`.
-- **Suggestion:** Either include results in the final poll response when status is "done", or make this two-step process more prominent in documentation.
+## What Felt Great
 
-### Search results per page
-- **Issue:** We expected ~48 results per page (standard Amazon desktop view), but only got ~16-17 organic + 1-2 paid per page.
-- **Impact:** Had to increase pagination from 3 to 7 pages to collect 100 results (more API calls = higher cost).
-- **Suggestion:** Document expected results-per-page for each source, or offer a `results_per_page` parameter.
+- **Structured parsing is the killer feature.** Setting `parse: true` and getting back a clean JSON object with 50+ fields per product felt like magic. No HTML parsing, no CSS selectors to maintain, no worrying about layout changes breaking things.
+- **Anti-bot handling is invisible.** Zero CAPTCHAs, zero blocks across 100+ product requests. It just works. This is exactly the value prop for a team like TechNovaAI who doesn't want to deal with this.
+- **Response speed.** Search results in 3-4 seconds, product pages in 5-15 seconds via async. Fast enough to feel interactive during development.
+- **Async job reliability.** Submitted 100 product jobs across 10 batches — every single one completed without faulting. The pending → running → done state machine is clean.
 
-## Documentation
+## What Felt Rough
 
-- The async workflow (submit → poll → fetch results) needs a clearer end-to-end example showing the separate results fetch step.
-- `geo_location` accepted formats should be documented per source type (Amazon uses ZIP codes).
+- **The async workflow has a hidden step.** When a job hits "done" status, the results aren't in the poll response. You need to know to hit a separate `/results` endpoint. This tripped us up — all 100 product requests silently returned no data until we discovered the extra fetch. Most async APIs include results in the final status response.
+- **`geo_location` format is non-obvious.** We tried `"United States"` and got a 400 with no hint of what format is expected. Turns out it wants a ZIP code (`"90210"`). Trial and error shouldn't be needed for a core parameter.
+- **Fewer results per page than expected.** Amazon search returned ~16 organic results per page, not ~48. Not a bug, but it meant more API calls (and cost) than we planned for.
+- **Field naming differs between sources.** Search results use `is_prime`, product pages use `is_prime_eligible`. Small thing, but it adds friction when merging data from both sources.
+- **`description` field type is inconsistent.** Some products return a string, others return a list of image URLs. Requires defensive coding for what should be a simple field.
 
-## Parsing Accuracy (`parse: true`)
+## The "Feel" Summary
 
-### What worked well:
-- `title`, `price`, `currency`, `asin` — always present and accurate
-- `product_details` — rich specifications dictionary (52 fields for an iPhone listing)
-- `is_prime_eligible` — correct boolean
-- `delivery` — structured array with type + date
+It feels like a product built by infrastructure engineers who deeply understand the scraping problem, but the developer-facing layer could use more polish. The hard stuff (anti-bot, parsing, reliability) is excellent. The easy stuff (error messages, field consistency, documentation of workflows) has some gaps that slow down first-time integration.
 
-### Issues found:
-- **`description` field returns image URLs as a list** on some products instead of the text description. 4 out of 100 products had `description` as a list of image URLs rather than a string. Required defensive handling.
-- **Field naming inconsistency:** `is_prime_eligible` (product page) vs `is_prime` (search results) — different field names for the same concept across sources.
-
-## Feature Requests
-
-1. **Consistent field naming** across `amazon_search` and `amazon_product` sources (e.g., both use `is_prime` or both use `is_prime_eligible`)
-2. **Include results in final poll response** when status is "done" (save an extra API call)
-3. **Better error messages** with expected parameter formats
-4. **`results_per_page` control** for search sources
-
-## Error Messages / Debugging
-
-- `400 Bad Request` for invalid `geo_location` — message says the value is "not valid" but doesn't suggest the correct format
-- No issues with authentication errors (clear 401 on bad credentials)
-- Async job status transitions (pending → running → done) work cleanly
-
-## Overall Impressions
-
-**Strengths:**
-- Structured parsing (`parse: true`) delivers excellent data quality — product_details alone has 52 fields
-- Async mode works reliably for batch product scraping
-- Response times are fast (3-4s for search, 5-15s for async product jobs)
-- Anti-bot handling is completely invisible to us (no CAPTCHAs, no blocks)
-
-**Areas for improvement:**
-- Developer experience on first integration has some "gotcha" moments (geo_location format, async results endpoint)
-- Documentation could better highlight these patterns
-- 96/100 success rate on first real run is good, but the 4 failures were due to inconsistent `description` field types
+Once you get past the initial gotchas, it's a pleasure to use. The data quality is genuinely impressive.

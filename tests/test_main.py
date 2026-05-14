@@ -16,13 +16,13 @@ def test_run_scrape_job_returns_scraped_products(mock_search, mock_scrape):
             url="https://www.amazon.com/dp/B0TEST001",
         )
     ]
-    mock_scrape.return_value = [
-        ProductData(
+    mock_scrape.return_value = {
+        "B0TEST001": ProductData(
             title="iPhone 14 Full", price=301.49, currency="USD",
             description="Restored.", specifications={"brand": "Apple"},
             is_prime=True, delivery="FREE delivery",
         )
-    ]
+    }
 
     results = run_scrape_job()
     assert len(results) == 1

@@ -1,6 +1,6 @@
 import logging
 import time
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from scraper.client import OxylabsClient
 from models import SearchResult, ProductData
@@ -13,15 +13,16 @@ def scrape_products(
     search_results: List[SearchResult],
     client: OxylabsClient = None,
     batch_size: int = config.BATCH_SIZE,
-) -> List[ProductData]:
+) -> Dict[str, ProductData]:
     """
     Phase 2: Scrape individual product pages using async/polling mode.
-    Submits requests in batches, polls for completion, returns ProductData list.
+    Submits requests in batches, polls for completion.
+    Returns dict keyed by ASIN for easy merging with search results.
     """
     if client is None:
         client = OxylabsClient()
 
-    all_products: List[ProductData] = []
+    all_products: Dict[str, ProductData] = {}
 
     # FEATURE: Batch submission — process products in chunks
     for i in range(0, len(search_results), batch_size):
@@ -31,13 +32,13 @@ def scrape_products(
         logger.info(f"Processing batch {batch_num}/{total_batches} ({len(batch)} products)")
 
         batch_products = _process_batch(client, batch)
-        all_products.extend(batch_products)
+        all_products.update(batch_products)
 
     logger.info(f"Scraped {len(all_products)}/{len(search_results)} products successfully")
     return all_products
 
 
-def _process_batch(client: OxylabsClient, batch: List[SearchResult]) -> List[ProductData]:
+def _process_batch(client: OxylabsClient, batch: List[SearchResult]) -> Dict[str, ProductData]:
     """Submit a batch of product requests and poll for results."""
     jobs = []
 
@@ -56,12 +57,12 @@ def _process_batch(client: OxylabsClient, batch: List[SearchResult]) -> List[Pro
 
         try:
             job = client.async_submit(payload)
-            jobs.append({"job_id": job["id"], "search_result": item})
+            jobs.append({"job_id": job["id"], "asin": item.asin})
         except Exception as e:
             logger.warning(f"Failed to submit job for ASIN {item.asin}: {e}")
 
     # Poll all jobs for completion
-    products = []
+    products: Dict[str, ProductData] = {}
     for job_info in jobs:
         try:
             result = _poll_until_done(
@@ -72,10 +73,9 @@ def _process_batch(client: OxylabsClient, batch: List[SearchResult]) -> List[Pro
             )
             product = _parse_product_response(result)
             if product:
-                products.append(product)
+                products[job_info["asin"]] = product
         except Exception as e:
-            asin = job_info["search_result"].asin
-            logger.warning(f"Failed to get product data for ASIN {asin}: {e}")
+            logger.warning(f"Failed to get product data for ASIN {job_info['asin']}: {e}")
 
     return products
 
