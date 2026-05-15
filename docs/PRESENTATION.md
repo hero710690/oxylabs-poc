@@ -146,6 +146,12 @@ python main.py --once
 - Older models = wider spread, more sellers, race to the bottom
 - FBA adoption is low — opportunity to differentiate with faster fulfillment
 
+**Why only top 5 ASINs?**
+- This is a PoC — the pattern is proven and easily scales to all 100
+- Each `amazon_pricing` call takes 4-20 seconds; all 100 would add ~10 min per run
+- Cost: 5 requests/run = $10.80/month vs 100 requests/run = $216/month
+- In production, TechNovaAI can choose: top 5, top 20, or all 100 based on their budget and priority
+
 ---
 
 ## Slide 8: Oxylabs Features Powering This
