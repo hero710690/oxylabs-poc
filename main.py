@@ -142,7 +142,7 @@ def save_results(products: List[ScrapedProduct], output_dir: str = config.OUTPUT
             "price_unavailable": price_unavailable,
             "query": config.SEARCH_QUERY,
             "geo_location": config.GEO_LOCATION,
-            "note": "Products with price 0 are listings where Amazon hides pricing behind 'See all buying options' (e.g., carrier-locked phones, SIM-free imports).",
+            "note": "Products with price 0 are listings where Amazon either hides pricing behind 'See all buying options' (e.g., carrier-locked phones, SIM-free imports) or are currently unavailable. These still appear in Amazon's search rankings.",
         },
         "products": [p.model_dump(mode="json") for p in products],
     }
