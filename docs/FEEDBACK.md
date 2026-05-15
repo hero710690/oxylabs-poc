@@ -32,6 +32,6 @@ Getting started was straightforward — username/password auth, simple JSON payl
 
 It feels like a powerful, reliable product. The hard stuff (anti-bot, parsing, reliability, data richness) is excellent. The API is well-designed with good separation of concerns (realtime vs async, different sources for different data needs).
 
-Minor friction points are around field consistency across sources — would be nice if `amazon_search` and `amazon_product` used identical field names for the same concepts. But these are easily worked around once you know about them.
+Minor friction points are around field consistency across sources. It would be nice if `amazon_search` and `amazon_product` used identical field names for the same concepts. But these are easily worked around once you know about them.
 
 Overall: the API does what it promises, reliably, with rich data. Exactly what a team without scraping expertise needs.
