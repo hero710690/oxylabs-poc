@@ -1,20 +1,23 @@
 """
-FEATURE: Async/Callback mode — alternative to polling.
+FEATURE: Async/Callback mode + Oxylabs Scheduler.
 
-Instead of polling for job completion, Oxylabs can POST results directly
-to a callback URL when the job finishes. This is more efficient for
-production workloads as it eliminates polling overhead.
+Two related features:
+1. Callback mode: Instead of polling, Oxylabs POSTs results to your endpoint.
+2. Scheduler: Oxylabs runs jobs on a recurring schedule and delivers via callback.
+
+Combined, these eliminate both polling AND cron — Oxylabs handles everything.
 
 Usage:
-    1. Set up a webhook endpoint (e.g., Flask/FastAPI server)
-    2. Pass callback_url in the payload
-    3. Oxylabs POSTs results to your endpoint when done
+    1. Start the webhook server: uvicorn webhook_server:app --port 8000
+    2. Expose publicly (dev): ngrok http 8000
+    3. Submit a scheduled job: python -c "from scraper.callback import submit_scheduled; submit_scheduled('https://your-ngrok-url/webhooks/oxylabs')"
 
-This module is a documented alternative — the main PoC uses polling mode.
-See scraper/product.py for the primary implementation.
+See webhook_server.py for the receiving endpoint.
 """
 
 import logging
+from typing import List
+
 from scraper.client import OxylabsClient
 import config
 
@@ -27,20 +30,12 @@ def submit_with_callback(
     client: OxylabsClient = None,
 ) -> dict:
     """
-    Submit an async product scrape with a callback URL.
-
     FEATURE: Async/Callback mode
-    Instead of polling, Oxylabs will POST results to callback_url when done.
-
-    Example callback_url: "https://your-server.com/webhooks/oxylabs"
-
-    The callback payload will contain the same structure as a poll response
-    with status "done" and the results array.
+    Submit a single product scrape with callback delivery.
     """
     if client is None:
         client = OxylabsClient()
 
-    # FEATURE: callback_url — Oxylabs sends results to this URL when job completes
     payload = {
         "source": "amazon_product",
         "query": asin,
@@ -54,16 +49,36 @@ def submit_with_callback(
     return client.async_submit(payload)
 
 
-# Example Flask webhook handler (for documentation purposes):
-#
-# from flask import Flask, request
-#
-# app = Flask(__name__)
-#
-# @app.route("/webhooks/oxylabs", methods=["POST"])
-# def handle_oxylabs_callback():
-#     data = request.json
-#     job_id = data["id"]
-#     results = data["results"]
-#     # Process and store results...
-#     return "", 200
+def submit_scheduled(
+    callback_url: str,
+    client: OxylabsClient = None,
+) -> dict:
+    """
+    FEATURE: Oxylabs Scheduler — recurring job with callback delivery.
+
+    Submits a search job that Oxylabs will run on a schedule (every hour)
+    and POST results to the callback URL. No cron, no polling needed.
+
+    See: https://developers.oxylabs.io/products/web-scraper-api/features/scheduler
+    """
+    if client is None:
+        client = OxylabsClient()
+
+    # FEATURE: Oxylabs Scheduler — schedule_at with recurring interval
+    # FEATURE: callback_url — results delivered via webhook
+    payload = {
+        "source": "amazon_search",
+        "query": config.SEARCH_QUERY,
+        "domain": config.SEARCH_DOMAIN,
+        "parse": True,
+        "geo_location": config.GEO_LOCATION,
+        "callback_url": callback_url,
+        "schedule": {
+            "frequency": "hourly",
+        },
+    }
+
+    logger.info(f"Submitting scheduled job (hourly) with callback to {callback_url}")
+    response = client.async_submit(payload)
+    logger.info(f"Scheduled job created: {response.get('id')}")
+    return response

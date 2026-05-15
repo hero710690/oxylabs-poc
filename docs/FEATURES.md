@@ -19,6 +19,7 @@ This document maps every Oxylabs feature used in this PoC to its location in the
 | 11 | Async endpoint | `scraper/client.py` | `async_submit()` | Background job submission |
 | 12 | Async results retrieval | `scraper/client.py` | `async_get_results()` | Fetch completed job results |
 | 13 | `context: autoselect_variant` | `scraper/product.py` | `_process_batch()` | Accurate buybox pricing for variant products |
+| 14 | Oxylabs Scheduler | `scraper/callback.py` | `submit_scheduled()` | Recurring jobs with callback delivery (no cron needed) |
 
 ## Feature Details
 
@@ -69,3 +70,10 @@ we can track progress, handle failures per-batch, and avoid overwhelming the API
 iPhones come in many storage/color variants. Without `autoselect_variant: true`,
 the API might return pricing for a different variant than the one shown. This parameter
 appends `th=1&psc=1` to get accurate buybox/pricing data for the primary variant.
+
+### 14. Oxylabs Scheduler
+Oxylabs can run scraping jobs on a recurring schedule and deliver results via callback
+URL — eliminating the need for cron, APScheduler, or any client-side scheduling.
+Combined with a FastAPI webhook receiver (`webhook_server.py`), this creates a fully
+managed pipeline: Oxylabs handles timing + scraping, our server just receives and stores.
+See: https://developers.oxylabs.io/products/web-scraper-api/features/scheduler
