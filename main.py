@@ -34,11 +34,15 @@ def run_scrape_job() -> List[ScrapedProduct]:
     # Phase 2: Product pages
     logger.info("Phase 2: Scraping individual product pages...")
     product_data = scrape_products(search_results, client=client)
-    logger.info(f"Scraped {len(product_data)} product pages")
+    logger.info(f"Got detailed data for {len(product_data)} product pages")
 
     # Merge search metadata with product data
     merged = _merge_results(search_results, product_data)
-    logger.info(f"Merged {len(merged)} complete product records")
+    logger.info(
+        f"Output: {len(merged)} products total "
+        f"({len(product_data)} with full detail, "
+        f"{len(merged) - len(product_data)} with search-level data)"
+    )
 
     # Phase 3: Pricing for top 5 products (demo of amazon_pricing source)
     logger.info("Phase 3: Fetching seller pricing for top 5 listings...")

@@ -34,7 +34,10 @@ def scrape_products(
         batch_products = _process_batch(client, batch)
         all_products.update(batch_products)
 
-    logger.info(f"Scraped {len(all_products)}/{len(search_results)} products successfully")
+    logger.info(
+        f"Product pages: {len(all_products)}/{len(search_results)} succeeded "
+        f"({len(search_results) - len(all_products)} will use search-level fallback)"
+    )
     return all_products
 
 
