@@ -127,7 +127,9 @@ python main.py --once
 
 ---
 
-## Slide 7: Pricing Intelligence Deep Dive
+## Slide 7: Pricing Intelligence Deep Dive (Beyond Requirements)
+
+> **Note:** This goes beyond the core task requirements. We explored `amazon_pricing` as an additional Oxylabs feature to demonstrate extra value for TechNovaAI's resale use case — knowing what competitors charge is critical for a company entering the market.
 
 **Example: iPhone 15 Pro Max (B0CMZ4FQL4)**
 - 11 sellers competing
