@@ -17,9 +17,19 @@ Getting started was straightforward — username/password auth, simple JSON payl
 
 ## What Felt Rough
 
-- **Field naming differs between sources.** Search results use `is_prime`, product pages use `is_prime_eligible`. Small thing, but it adds friction when merging data from both sources.
+- **Field naming differs between sources.** Search results use `is_prime`, product pages use `is_prime_eligible`. Same concept, different field names — adds friction when merging data.
+  - Evidence: `amazon_search` response → `"is_prime": true`
+  - Evidence: `amazon_product` response (same ASIN) → `"is_prime_eligible": true`
+  - Workaround: `search.py` reads `item.get("is_prime")`, `product.py` reads `content.get("is_prime_eligible")`
+
 - **`description` field type is inconsistent.** Some products return a string, others return a list of image URLs. Requires defensive coding for what should be a simple field.
+  - Evidence: ASIN B0CMPMY9ZZ → `"description": "Apple iPhone 15, 128GB..."` (string)
+  - Evidence: ASIN B0F7LP2K5D → `"description": ["https://m.media-amazon.com/images/S/aplus-media-library-service-media/9e91bec9...", ...]` (list of 10 image URLs)
+  - Workaround: `if isinstance(description, list): description = None`
+
 - **Results per page is lower than expected.** Amazon search returned ~16 organic results per page. Not a bug, but it meant more pagination than anticipated (~7 pages for 100 results instead of 3).
+  - Evidence: Page 1 returned 16 organic + 1 paid = 17 total results
+  - At 16/page: 3 pages = ~48 results (not enough), 7 pages = ~112 (trim to 100)
 
 ## The "Feel" Summary
 
