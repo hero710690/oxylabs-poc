@@ -7,7 +7,7 @@ Valuable for competitive analysis in the resale market.
 """
 
 import logging
-from typing import Dict, List, Optional
+from typing import List
 
 from scraper.client import OxylabsClient
 from models import PricingOffer
@@ -43,27 +43,6 @@ def get_pricing(
 
     return _parse_pricing_response(response)
 
-
-def get_pricing_batch(
-    asins: List[str],
-    client: OxylabsClient = None,
-) -> Dict[str, List[PricingOffer]]:
-    """
-    Fetch pricing for multiple ASINs.
-    Returns dict keyed by ASIN with list of offers.
-    """
-    if client is None:
-        client = OxylabsClient()
-
-    results: Dict[str, List[PricingOffer]] = {}
-    for asin in asins:
-        try:
-            offers = get_pricing(asin, client=client)
-            results[asin] = offers
-        except Exception as e:
-            logger.warning(f"Failed to get pricing for ASIN {asin}: {e}")
-
-    return results
 
 
 def _parse_pricing_response(response: dict) -> List[PricingOffer]:

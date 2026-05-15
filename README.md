@@ -27,14 +27,14 @@ Scheduler triggers hourly run
 | 5 | `geo_location` | All scraper modules | Lock results to US market (ZIP code) |
 | 6 | URL-based filtering | `scraper/search.py` | Category + brand filter via Amazon URL params |
 | 7 | Async/Polling mode | `scraper/product.py` | Non-blocking batch product scraping |
-| 8 | Async/Callback mode | `scraper/callback.py` | Webhook-based delivery (production alternative) |
+| 8 | Async/Callback mode | `scripts/webhook_server.py` | Webhook-based delivery notification receiver |
 | 9 | Batch submission | `scraper/product.py` | Process 100 products in chunks of 10 |
 | 10 | Realtime endpoint | `scraper/client.py` | Synchronous search + pricing requests |
 | 11 | Async endpoint | `scraper/client.py` | Background job submission + results retrieval |
 | 12 | `context: autoselect_variant` | `scraper/product.py` | Accurate buybox pricing for variant products |
 | 13 | Async results retrieval | `scraper/client.py` | Fetch completed job results from separate endpoint |
-| 14 | Oxylabs Scheduler | `scraper/callback.py` | Recurring jobs on cron schedule (no cron needed) |
-| 15 | Cloud Storage delivery | `scraper/callback.py` | Results pushed directly to client's S3/GCS bucket |
+| 14 | Oxylabs Scheduler | `scripts/test_scheduler.py` | Recurring jobs on cron schedule (tested: create → pause → delete) |
+| 15 | Cloud Storage delivery | `scraper/client.py` | Results pushed directly to client's S3/GCS via storage_type param |
 
 See [docs/FEATURES.md](docs/FEATURES.md) for detailed explanations of each feature.
 
@@ -100,8 +100,7 @@ oxylabs-poc/
 │   ├── client.py              # Oxylabs API wrapper (retry, async, scheduler)
 │   ├── search.py              # Phase 1: brand-filtered search (Apple iPhones only)
 │   ├── product.py             # Phase 2: batch async product pages
-│   ├── pricing.py             # Phase 3: multi-seller pricing
-│   └── callback.py            # Callback + Scheduler + Cloud Storage delivery
+│   └── pricing.py             # Phase 3: multi-seller pricing
 ├── scripts/
 │   ├── report.py              # HTML report/dashboard generator
 │   ├── test_scheduler.py      # Oxylabs Scheduler API test script

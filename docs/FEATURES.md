@@ -13,14 +13,14 @@ This document maps every Oxylabs feature used in this PoC to its location in the
 | 5 | `geo_location` | All scraper modules | All payloads | Locks results to US market (ZIP code: 90210) |
 | 6 | URL-based filtering | `scraper/search.py` | `search_iphones()` | Category + brand filter via Amazon URL params (zero waste) |
 | 7 | Async/Polling mode | `scraper/product.py` | `_poll_until_done()` | Non-blocking batch product scraping |
-| 8 | Async/Callback mode | `scraper/callback.py` | `submit_with_callback()` | Documented alternative — webhook-based delivery |
+| 8 | Async/Callback mode | `scripts/webhook_server.py` | `receive_oxylabs_callback()` | Webhook-based delivery notification receiver |
 | 9 | Batch submission | `scraper/product.py` | `scrape_products()` | Processes 100 products in chunks of 10 |
 | 10 | Realtime endpoint | `scraper/client.py` | `realtime()` | Synchronous search + pricing requests |
 | 11 | Async endpoint | `scraper/client.py` | `async_submit()` | Background job submission |
 | 12 | Async results retrieval | `scraper/client.py` | `async_get_results()` | Fetch completed job results |
 | 13 | `context: autoselect_variant` | `scraper/product.py` | `_process_batch()` | Accurate buybox pricing for variant products |
-| 14 | Oxylabs Scheduler | `scraper/callback.py` | `submit_scheduled()` | Recurring jobs on cron schedule (no infrastructure needed) |
-| 15 | Cloud Storage delivery | `scraper/callback.py` | `submit_scheduled()` | Results pushed directly to client's S3/GCS bucket |
+| 14 | Oxylabs Scheduler | `scripts/test_scheduler.py` | `client.create_schedule()` | Recurring jobs on cron schedule (tested: create → verify → pause → delete) |
+| 15 | Cloud Storage delivery | `scraper/client.py` | `create_schedule()` | Results pushed directly to client's S3/GCS via storage_type param |
 
 ## Feature Details
 
@@ -60,7 +60,8 @@ submit all jobs quickly, then poll for completion. Jobs run in parallel on Oxyla
 
 ### 8. Async/Callback (Alternative)
 For production, a callback URL eliminates polling overhead entirely. Oxylabs POSTs
-results to your endpoint when each job completes. See `scraper/callback.py`.
+a notification to your endpoint when each job completes. See `scripts/webhook_server.py`
+for the FastAPI receiver implementation.
 
 ### 9. Batch Processing
 We chunk 100 products into groups of 10. This balances throughput with manageability —
@@ -77,8 +78,9 @@ the API might return pricing for a different variant than the one shown. This pa
 appends `th=1&psc=1` to get accurate buybox/pricing data for the primary variant.
 
 ### 14. Oxylabs Scheduler
-Oxylabs runs scraping jobs on a recurring cron schedule — no cron, APScheduler,
-or scheduling infrastructure needed on the client side.
+Oxylabs runs scraping jobs on a recurring cron schedule — no scheduling
+infrastructure needed on the client side. Tested in `scripts/test_scheduler.py`
+(create → verify → pause → delete — all confirmed working).
 
 **API:** `POST https://data.oxylabs.io/v1/schedules`
 

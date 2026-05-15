@@ -67,11 +67,33 @@ class OxylabsClient:
         response.raise_for_status()
         return response.json()
 
-    # FEATURE: Oxylabs Scheduler — create recurring scheduled jobs
+    # FEATURE: Oxylabs Scheduler — CRUD for recurring scheduled jobs
+    SCHEDULES_URL = "https://data.oxylabs.io/v1/schedules"
+
     def create_schedule(self, payload: dict) -> dict:
         """Create a scheduled job on Oxylabs Scheduler."""
-        url = f"{config.ASYNC_URL.rsplit('/queries', 1)[0]}/schedules"
         logger.info(f"Creating schedule: cron={payload.get('cron')}")
-        response = requests.post(url, json=payload, auth=self.auth, timeout=30)
+        response = requests.post(self.SCHEDULES_URL, json=payload, auth=self.auth, timeout=30)
         response.raise_for_status()
         return response.json()
+
+    def get_schedule(self, schedule_id: str) -> dict:
+        """Fetch a schedule by ID."""
+        response = requests.get(f"{self.SCHEDULES_URL}/{schedule_id}", auth=self.auth, timeout=30)
+        response.raise_for_status()
+        return response.json()
+
+    def pause_schedule(self, schedule_id: str) -> None:
+        """Pause (deactivate) a schedule."""
+        response = requests.put(
+            f"{self.SCHEDULES_URL}/{schedule_id}/state",
+            json={"active": False},
+            auth=self.auth,
+            timeout=30,
+        )
+        response.raise_for_status()
+
+    def delete_schedule(self, schedule_id: str) -> None:
+        """Delete a schedule."""
+        response = requests.delete(f"{self.SCHEDULES_URL}/{schedule_id}", auth=self.auth, timeout=30)
+        response.raise_for_status()

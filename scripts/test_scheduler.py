@@ -11,16 +11,15 @@ import json
 import os
 import sys
 
-import requests
-
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import config
 
-auth = (config.OXYLABS_USERNAME, config.OXYLABS_PASSWORD)
-base_url = "https://data.oxylabs.io/v1/schedules"
+from scraper.client import OxylabsClient
+import config
 
 
 def main():
+    client = OxylabsClient()
+
     # Step 1: Create a schedule
     print("1. Creating schedule...")
     payload = {
@@ -37,50 +36,29 @@ def main():
         ],
     }
 
-    resp = requests.post(base_url, json=payload, auth=auth, timeout=30)
-    print(f"   Status: {resp.status_code}")
-
-    if resp.status_code not in (200, 201):
-        print(f"   Error: {resp.text}")
-        return
-
-    schedule = resp.json()
+    schedule = client.create_schedule(payload)
     schedule_id = schedule.get("schedule_id")
     print(f"   Schedule created: ID={schedule_id}")
     print(f"   Response: {json.dumps(schedule, indent=2)}")
 
     # Step 2: Verify it exists
     print(f"\n2. Fetching schedule {schedule_id}...")
-    resp = requests.get(f"{base_url}/{schedule_id}", auth=auth, timeout=30)
-    print(f"   Status: {resp.status_code}")
-    if resp.status_code == 200:
-        info = resp.json()
-        print(f"   Cron: {info.get('cron')}")
-        print(f"   Active: {info.get('active', 'N/A')}")
-        print(f"   End time: {info.get('end_time')}")
+    info = client.get_schedule(schedule_id)
+    print(f"   Cron: {info.get('cron')}")
+    print(f"   Active: {info.get('active', 'N/A')}")
+    print(f"   End time: {info.get('end_time')}")
 
-    # Step 3: Pause it (optional — shows we can control it)
+    # Step 3: Pause it
     print(f"\n3. Pausing schedule...")
-    resp = requests.put(
-        f"{base_url}/{schedule_id}/state",
-        json={"active": False},
-        auth=auth,
-        timeout=30,
-    )
-    print(f"   Status: {resp.status_code}")
-    if resp.status_code == 200:
-        print("   Schedule paused successfully")
+    client.pause_schedule(schedule_id)
+    print("   Schedule paused successfully")
 
     # Step 4: Delete it (cleanup)
     print(f"\n4. Deleting schedule...")
-    resp = requests.delete(f"{base_url}/{schedule_id}", auth=auth, timeout=30)
-    print(f"   Status: {resp.status_code}")
-    if resp.status_code in (200, 204):
-        print("   Schedule deleted successfully")
-    else:
-        print(f"   Response: {resp.text}")
+    client.delete_schedule(schedule_id)
+    print("   Schedule deleted successfully")
 
-    print("\n✓ Oxylabs Scheduler API works — create, read, pause, delete all confirmed.")
+    print("\nOxylabs Scheduler API works — create, read, pause, delete all confirmed.")
 
 
 if __name__ == "__main__":

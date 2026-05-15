@@ -28,6 +28,16 @@ Getting started was straightforward — username/password auth, simple JSON payl
   - Workaround: `if isinstance(description, list): description = None`
 
 
+## Feature Request: Scheduler Job Chaining
+
+The Scheduler supports multiple `items` in a single schedule, but all must be defined statically at creation time. There's no way to **chain jobs** — where the output of one job (e.g., ASINs discovered from a search) feeds as input to the next job (e.g., product page scraping for those ASINs).
+
+Our pipeline requires 3 phases: search → product pages → pricing. The ASINs change every hour (we observed 13 listings rotate out in a single hour), so we can't hardcode them. This forces us to maintain our own scheduling infrastructure (crontab + Python orchestration) instead of using the Oxylabs Scheduler end-to-end.
+
+**What would help:** A pipeline/workflow mode in the Scheduler that supports job dependencies — "when job A completes, extract field X from results, and use those values as `query` for job B." This would let teams like TechNovaAI replace custom orchestration entirely with a fully managed Oxylabs solution.
+
+---
+
 ## The "Feel" Summary
 
 It feels like a powerful, reliable product. The hard stuff (anti-bot, parsing, reliability, data richness) is excellent. The API is well-designed with good separation of concerns (realtime vs async, different sources for different data needs).
