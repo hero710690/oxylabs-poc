@@ -34,10 +34,24 @@ def scrape_products(
         batch_products = _process_batch(client, batch)
         all_products.update(batch_products)
 
-    logger.info(
-        f"Product pages: {len(all_products)}/{len(search_results)} succeeded "
-        f"({len(search_results) - len(all_products)} will use search-level fallback)"
-    )
+    # Retry failed products (up to 2 attempts)
+    failed = [r for r in search_results if r.asin not in all_products]
+    retries = 0
+    while failed and retries < 2:
+        retries += 1
+        logger.info(f"Retrying {len(failed)} failed products (attempt {retries}/2)")
+        retry_products = _process_batch(client, failed)
+        all_products.update(retry_products)
+        failed = [r for r in failed if r.asin not in all_products]
+
+    if failed:
+        logger.warning(
+            f"Product pages: {len(all_products)}/{len(search_results)} succeeded "
+            f"({len(failed)} failed after retries)"
+        )
+    else:
+        logger.info(f"Product pages: {len(all_products)}/{len(search_results)} succeeded")
+
     return all_products
 
 

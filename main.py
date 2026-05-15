@@ -34,15 +34,18 @@ def run_scrape_job() -> List[ScrapedProduct]:
     # Phase 2: Product pages
     logger.info("Phase 2: Scraping individual product pages...")
     product_data = scrape_products(search_results, client=client)
-    logger.info(f"Got detailed data for {len(product_data)} product pages")
+    logger.info(f"Got detailed data for {len(product_data)}/{len(search_results)} product pages")
 
     # Merge search metadata with product data
     merged = _merge_results(search_results, product_data)
-    logger.info(
-        f"Output: {len(merged)} products total "
-        f"({len(product_data)} with full detail, "
-        f"{len(merged) - len(product_data)} with search-level data)"
-    )
+    if len(product_data) == len(search_results):
+        logger.info(f"All {len(merged)} products have full detail")
+    else:
+        logger.info(
+            f"Output: {len(merged)} products total "
+            f"({len(product_data)} with full detail, "
+            f"{len(merged) - len(product_data)} with search-level data)"
+        )
 
     # Phase 3: Pricing for top 5 products (demo of amazon_pricing source)
     logger.info("Phase 3: Fetching seller pricing for top 5 listings...")
@@ -129,12 +132,17 @@ def save_results(products: List[ScrapedProduct], output_dir: str = config.OUTPUT
     filename = f"iphones_{timestamp}.json"
     filepath = os.path.join(output_dir, filename)
 
+    price_unavailable = sum(1 for p in products if not p.price or p.price == 0)
+
     output = {
         "metadata": {
             "scraped_at": datetime.now(timezone.utc).isoformat(),
             "total_products": len(products),
+            "products_with_price": len(products) - price_unavailable,
+            "price_unavailable": price_unavailable,
             "query": config.SEARCH_QUERY,
             "geo_location": config.GEO_LOCATION,
+            "note": "Products with price 0 are listings where Amazon hides pricing behind 'See all buying options' (e.g., carrier-locked phones, SIM-free imports).",
         },
         "products": [p.model_dump(mode="json") for p in products],
     }
