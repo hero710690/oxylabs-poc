@@ -51,34 +51,43 @@ def submit_with_callback(
 
 def submit_scheduled(
     callback_url: str,
+    end_time: str = "2027-01-01 00:00:00",
     client: OxylabsClient = None,
 ) -> dict:
     """
     FEATURE: Oxylabs Scheduler — recurring job with callback delivery.
 
-    Submits a search job that Oxylabs will run on a schedule (every hour)
-    and POST results to the callback URL. No cron, no polling needed.
+    Creates a scheduled job that Oxylabs runs every hour and delivers
+    results via callback URL. No cron, no polling needed.
 
+    Endpoint: POST https://data.oxylabs.io/v1/schedules
     See: https://developers.oxylabs.io/products/web-scraper-api/features/scheduler
+
+    Args:
+        callback_url: Webhook URL to receive results (e.g. https://your-server/webhooks/oxylabs)
+        end_time: When the schedule expires (format: "YYYY-MM-DD HH:MM:SS")
     """
     if client is None:
         client = OxylabsClient()
 
-    # FEATURE: Oxylabs Scheduler — schedule_at with recurring interval
+    # FEATURE: Oxylabs Scheduler — cron expression + items + end_time
     # FEATURE: callback_url — results delivered via webhook
     payload = {
-        "source": "amazon_search",
-        "query": config.SEARCH_QUERY,
-        "domain": config.SEARCH_DOMAIN,
-        "parse": True,
-        "geo_location": config.GEO_LOCATION,
-        "callback_url": callback_url,
-        "schedule": {
-            "frequency": "hourly",
-        },
+        "cron": "0 * * * *",  # Every hour at minute 0
+        "end_time": end_time,
+        "items": [
+            {
+                "source": "amazon_search",
+                "query": config.SEARCH_QUERY,
+                "domain": config.SEARCH_DOMAIN,
+                "parse": True,
+                "geo_location": config.GEO_LOCATION,
+                "callback_url": callback_url,
+            },
+        ],
     }
 
-    logger.info(f"Submitting scheduled job (hourly) with callback to {callback_url}")
-    response = client.async_submit(payload)
-    logger.info(f"Scheduled job created: {response.get('id')}")
+    logger.info(f"Creating scheduled job (hourly until {end_time}) with callback to {callback_url}")
+    response = client.create_schedule(payload)
+    logger.info(f"Schedule created: {response}")
     return response

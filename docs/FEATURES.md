@@ -74,6 +74,27 @@ appends `th=1&psc=1` to get accurate buybox/pricing data for the primary variant
 ### 14. Oxylabs Scheduler
 Oxylabs can run scraping jobs on a recurring schedule and deliver results via callback
 URL — eliminating the need for cron, APScheduler, or any client-side scheduling.
-Combined with a FastAPI webhook receiver (`webhook_server.py`), this creates a fully
+
+**API:** `POST https://data.oxylabs.io/v1/schedules`
+
+**Payload:**
+```json
+{
+  "cron": "0 * * * *",
+  "end_time": "2027-01-01 00:00:00",
+  "items": [
+    {
+      "source": "amazon_search",
+      "query": "iPhone",
+      "domain": "com",
+      "parse": true,
+      "geo_location": "90210",
+      "callback_url": "https://your-server.com/webhooks/oxylabs"
+    }
+  ]
+}
+```
+
+Combined with the FastAPI webhook receiver (`webhook_server.py`), this creates a fully
 managed pipeline: Oxylabs handles timing + scraping, our server just receives and stores.
 See: https://developers.oxylabs.io/products/web-scraper-api/features/scheduler

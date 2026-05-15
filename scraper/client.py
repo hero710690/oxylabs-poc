@@ -66,3 +66,12 @@ class OxylabsClient:
         response = requests.get(url, auth=self.auth, timeout=60)
         response.raise_for_status()
         return response.json()
+
+    # FEATURE: Oxylabs Scheduler — create recurring scheduled jobs
+    def create_schedule(self, payload: dict) -> dict:
+        """Create a scheduled job on Oxylabs Scheduler."""
+        url = f"{config.ASYNC_URL.rsplit('/queries', 1)[0]}/schedules"
+        logger.info(f"Creating schedule: cron={payload.get('cron')}")
+        response = requests.post(url, json=payload, auth=self.auth, timeout=30)
+        response.raise_for_status()
+        return response.json()
