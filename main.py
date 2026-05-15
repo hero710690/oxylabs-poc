@@ -2,16 +2,13 @@ import json
 import logging
 import os
 from datetime import datetime, timezone
-from typing import List
-
-from apscheduler.schedulers.blocking import BlockingScheduler
+from typing import Dict, List
 
 from scraper.client import OxylabsClient
 from scraper.search import search_iphones
 from scraper.product import scrape_products
 from scraper.pricing import get_pricing
 from models import SearchResult, ProductData, ScrapedProduct
-from typing import Dict
 import config
 
 logging.basicConfig(
@@ -26,7 +23,7 @@ def run_scrape_job() -> List[ScrapedProduct]:
     logger.info("=== Starting scrape job ===")
     client = OxylabsClient()
 
-    # Phase 1: Search
+    # Phase 1: Search (brand-filtered URL ensures only Apple iPhones)
     logger.info("Phase 1: Searching for top iPhone listings...")
     search_results = search_iphones(client=client)
     logger.info(f"Found {len(search_results)} listings from search")
@@ -154,39 +151,16 @@ def save_results(products: List[ScrapedProduct], output_dir: str = config.OUTPUT
     return filepath
 
 
-def scheduled_job():
-    """Wrapper for the scheduler — runs the pipeline and saves output."""
+def main():
+    """Entry point: run the scraping pipeline once and exit."""
+    logger.info("Oxylabs PoC — Amazon iPhone Scraper")
     try:
         results = run_scrape_job()
         save_results(results)
         logger.info(f"=== Job complete: {len(results)} products scraped ===")
     except Exception as e:
         logger.error(f"Job failed: {e}", exc_info=True)
-
-
-def main():
-    """Entry point: run once immediately, then schedule hourly."""
-    import argparse
-
-    parser = argparse.ArgumentParser(description="Oxylabs Amazon iPhone Scraper PoC")
-    parser.add_argument("--once", action="store_true", help="Run once and exit (no scheduler)")
-    args = parser.parse_args()
-
-    logger.info("Oxylabs PoC — Amazon iPhone Scraper")
-
-    if args.once:
-        logger.info("Single run mode (--once)")
-        scheduled_job()
-    else:
-        logger.info("Running initial scrape...")
-        scheduled_job()
-        logger.info("Starting hourly scheduler...")
-        scheduler = BlockingScheduler()
-        scheduler.add_job(scheduled_job, "interval", hours=1)
-        try:
-            scheduler.start()
-        except (KeyboardInterrupt, SystemExit):
-            logger.info("Scheduler stopped.")
+        raise
 
 
 if __name__ == "__main__":

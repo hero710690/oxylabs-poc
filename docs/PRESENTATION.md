@@ -33,7 +33,7 @@ Date: May 2026
 **A fully automated 3-phase pipeline:**
 
 ```
-Phase 1: Search        → Find top 100 iPhone listings (paginated)
+Phase 1: Search        → Brand-filtered search (Apple iPhones only, zero waste)
 Phase 2: Product Pages → Extract 50+ fields per product (async, batched)
 Phase 3: Pricing       → All seller offers for top products (competitive intel)
 ```
@@ -52,17 +52,17 @@ Phase 3: Pricing       → All seller offers for top products (competitive intel
 **Running the scraper:**
 
 ```bash
-python main.py --once
+python main.py
 ```
 
 **What you'll see in the logs:**
-1. Phase 1: 7 search pages → 100 listings found
+1. Phase 1: Brand-filtered search (5 pages) → 100 iPhone listings
 2. Phase 2: 10 batches of 10 products → async submission + polling
 3. Phase 3: 5 pricing requests → multi-seller offers
 
 **Output:** Timestamped JSON file in `output/` with all 100 products merged
 
-**Scheduler mode:** Remove `--once` and it runs automatically every hour via APScheduler. We have two output files from different runs proving this works.
+**Hourly scheduling:** System crontab runs `python main.py` every hour. We have multiple output files from consecutive cron runs proving this works.
 
 ---
 
@@ -112,7 +112,7 @@ python main.py --once
 - Median: $309.00
 
 **Market Composition:**
-- 86% Apple, 6% Google, 8% accessories/other
+- 100% Apple iPhones (brand-filtered at source — zero waste)
 - 83% of listings are Prime eligible
 - 11 sponsored listings vs 89 organic
 - 3 Best Seller badges across 100 listings
@@ -127,7 +127,53 @@ python main.py --once
 
 ---
 
-## Slide 7: Pricing Intelligence Deep Dive (Beyond Requirements)
+## Slide 7: Source Comparison — Why URL-Based Filtering
+
+We tested both available approaches and built a comparison script (`scripts/compare_sources.py`):
+
+| Metric | `amazon_search` | `amazon` (URL) |
+|--------|----------------|----------------|
+| Organic results | ~22 per page | ~22 per page |
+| Sponsored results | 6-8 per page | 6-8 per page |
+| Non-iPhone contamination | 5-10 per page (chargers, cases, Pixels) | 0 |
+| Brand filtering | Not supported | Yes (Apple only via URL params) |
+| `pages` param support | Yes (multi-page in one call) | No (one request per page) |
+
+**Decision:** We use `amazon` source with URL `rh=n:7072561011,p_123:110955` (Cell Phones + Apple brand). This eliminates wasted requests at the source — the client pays only for real iPhones.
+
+**Note:** For teams exploring Oxylabs for the first time, OxyCopilot generates the simpler `amazon_search` payload as a starting point. Our approach is an optimization on top of that.
+
+---
+
+## Slide 8: Hourly Scheduling — Proven with Real Data
+
+**Cron job running locally via system crontab:**
+
+```
+0 * * * * cd /path/to/oxylabs-poc && python main.py >> output/cron.log 2>&1
+```
+
+**Cron log proves two consecutive runs:**
+- Run 1: `2026-05-15T11:01:54` → 100 products, 97 with full detail
+- Run 2: `2026-05-15T12:05:34` → 100 products, 97 with full detail
+
+**What changed in just one hour:**
+
+| Metric | Value |
+|--------|-------|
+| Price changes detected | 11 out of 86 common products |
+| Largest price drop | **-$170.00** (iPhone 15 128GB: $769 → $599) |
+| Largest price increase | +$1.08 (iPhone 14 128GB) |
+| Rank position changes | 78 out of 86 common products |
+| Largest rank shift | +33 positions (iPhone 17 Pro Max) |
+| New listings appeared | 11 |
+| Listings dropped out | 13 |
+
+**Key Insight:** The market moves fast — 11 price changes and 78 rank shifts in a single hour. A $170 price drop on an iPhone 15 would be missed entirely without hourly monitoring. This validates the client's requirement for hourly refresh.
+
+---
+
+## Slide 9: Pricing Intelligence Deep Dive (Beyond Requirements)
 
 > **Note:** This goes beyond the core task requirements. We explored `amazon_pricing` as an additional Oxylabs feature to demonstrate extra value for TechNovaAI's resale use case — knowing what competitors charge is critical for a company entering the market.
 
@@ -156,16 +202,16 @@ python main.py --once
 
 ---
 
-## Slide 8: Oxylabs Features Powering This
+## Slide 10: Oxylabs Features Powering This
 
 | # | Feature | What It Does |
 |---|---------|--------------|
-| 1 | `amazon_search` | Paginated search results with rich metadata |
+| 1 | `amazon` source (URL) | Brand-filtered search — Apple iPhones only |
 | 2 | `amazon_product` | Full product page extraction (50+ fields) |
 | 3 | `amazon_pricing` | All seller offers for competitive pricing |
 | 4 | `parse: true` | Structured JSON — no HTML parsing needed |
 | 5 | `geo_location` | US market data (ZIP code targeting) |
-| 6 | Pagination | 7 pages → 100+ results |
+| 6 | URL-based filtering | Category + brand filter, zero wasted requests |
 | 7 | Async/Polling | Non-blocking batch processing |
 | 8 | Async/Callback | Webhook-based delivery (production alternative) |
 | 9 | Batch submission | 10 products per batch, 10 batches total |
@@ -178,11 +224,11 @@ python main.py --once
 
 ---
 
-## Slide 9: Architecture
+## Slide 11: Architecture
 
 ```
 ┌─────────────────────────────────────────────────────┐
-│                    APScheduler                        │
+│                  System Crontab                       │
 │                  (hourly trigger)                     │
 └──────────────────────┬──────────────────────────────┘
                        │
@@ -223,14 +269,14 @@ python main.py --once
 
 ---
 
-## Slide 10: Tech Stack
+## Slide 12: Tech Stack
 
 | Component | Technology | Why |
 |-----------|-----------|-----|
 | Language | Python 3.11+ | Rapid prototyping, rich ecosystem |
 | HTTP Client | requests + tenacity | Retry with exponential backoff |
 | Validation | Pydantic | Type-safe data, clear error messages |
-| Scheduling | Docker + cron | Production-ready, restartable, cloud-agnostic |
+| Scheduling | System crontab | Simple, reliable, no extra dependencies |
 | Config | python-dotenv | Secure credential management |
 | Container | Docker + docker-compose | Reproducible deployment |
 | Output | JSON files | Simple, portable, pipeline-ready |
@@ -238,8 +284,8 @@ python main.py --once
 **Deployment options:**
 | Option | Trade-off |
 |--------|-----------|
-| `docker compose up -d scraper-cron` | Self-contained, runs anywhere |
-| External scheduler (AWS/GCP/K8s) | Better monitoring, cloud-native |
+| System crontab + Docker | Self-contained, runs anywhere |
+| Cloud scheduler (AWS/GCP/K8s) | Better monitoring, cloud-native |
 | **Oxylabs Scheduler** | Zero infrastructure — Oxylabs handles timing + delivery via callback URL |
 
 **Lines of code:** ~500 (excluding tests)
@@ -247,22 +293,22 @@ python main.py --once
 
 ---
 
-## Slide 11: Cost Breakdown
+## Slide 13: Cost Breakdown
 
-**Per hourly run: 112 API requests**
+**Per hourly run: 110 API requests**
 | Request Type | Count |
 |---|---|
-| Search pages (`amazon_search`) | 7 |
+| Search pages (`amazon` source) | 5 |
 | Product pages (`amazon_product`) | 100 |
 | Pricing pages (`amazon_pricing`) | 5 |
 
 **Monthly estimate (24 runs/day):**
 | Item | Requests | Cost |
 |------|----------|------|
-| Search | 5,040 | ~$15.12 |
+| Search | 3,600 | ~$10.80 |
 | Product | 72,000 | ~$216.00 |
 | Pricing | 3,600 | ~$10.80 |
-| **Total** | **80,640** | **~$241.92/month** |
+| **Total** | **79,200** | **~$237.60/month** |
 
 **Cost optimization options:**
 - Business hours only (10 runs/day) → ~$100/month
@@ -271,9 +317,9 @@ python main.py --once
 
 ---
 
-## Slide 12: ROI Context
+## Slide 14: ROI Context
 
-**$242/month buys you:**
+**~$238/month buys you:**
 - Real-time competitive intelligence on 100 listings
 - Multi-seller pricing data (who's undercutting whom)
 - Delivery & fulfillment tracking
@@ -282,14 +328,14 @@ python main.py --once
 **Compare to alternatives:**
 | Approach | Monthly Cost | Engineering Effort |
 |----------|-------------|-------------------|
-| Oxylabs Web Scraper API | ~$242 | Low (this PoC) |
+| Oxylabs Web Scraper API | ~$238 | Low (this PoC) |
 | Build custom scraper + proxies | $500+ (proxies alone) | High (ongoing maintenance) |
 | Manual monitoring | $0 | Impossible at scale |
 | Third-party data provider | $1,000+ | Medium (integration) |
 
 ---
 
-## Slide 13: Next Steps
+## Slide 15: Next Steps
 
 **Immediate (Week 1-2):**
 - Connect to PostgreSQL/TimescaleDB for persistent storage
@@ -305,11 +351,11 @@ python main.py --once
 - Expand to other categories (Samsung, Google Pixel)
 - Multi-marketplace (eBay, Walmart via Oxylabs E-Commerce API)
 - ML-powered pricing recommendations
-- Oxylabs built-in Scheduler to replace APScheduler
+- Oxylabs built-in Scheduler for zero-infrastructure delivery
 
 ---
 
-## Slide 14: Why Oxylabs Over Competitors
+## Slide 16: Why Oxylabs Over Competitors
 
 ### Market Landscape
 
@@ -345,7 +391,18 @@ python main.py --once
 
 ---
 
-## Slide 15: Other Oxylabs Products to Consider
+## Slide 17: Other Oxylabs Products to Consider
+
+**Additional Amazon Sources (same API, ready to integrate):**
+
+| Source | Use Case |
+|--------|----------|
+| `amazon_sellers` | Monitor competitor sellers entering iPhone resale |
+| `amazon_bestsellers` | Track trending iPhones in real-time |
+| `amazon_reviews` | Sentiment analysis on competing listings |
+| `amazon_questions` | Identify common buyer concerns |
+
+**Other Oxylabs Products:**
 
 | Product | When to Upgrade |
 |---------|----------------|
@@ -354,15 +411,21 @@ python main.py --once
 | **Web Unblocker** | Scraping non-Amazon sites with anti-bot |
 | **Residential Proxies** | Building fully custom scraper for unique needs |
 
-**Recommendation:** Start with Web Scraper API (current). Upgrade to E-Commerce Scraper API when TechNovaAI expands beyond Amazon.
+**For New Users — OxyCopilot (AI Playground):**
+
+If TechNovaAI's team is new to web scraping, Oxylabs' built-in [OxyCopilot](https://developers.oxylabs.io/products/web-scraper-api/web-scraper-api-playground/oxycopilot) helps generate API payloads from natural language prompts, build custom parsers from HTML analysis, and create browser interaction scripts — all without writing code. Ideal for onboarding and rapid prototyping before writing production pipelines.
+
+**Recommendation:** Start with Web Scraper API (current). Use OxyCopilot for onboarding and exploring new sources. Add `amazon_reviews` + `amazon_bestsellers` for richer intelligence. Upgrade to E-Commerce Scraper API when expanding beyond Amazon.
 
 ---
 
-## Slide 16: Summary
+## Slide 18: Summary
 
 **What we delivered:**
 - Fully working scraper: 100 iPhones, 50+ fields each, hourly refresh
-- 13 Oxylabs features demonstrated
+- 15 Oxylabs features demonstrated
+- Source comparison proving URL-based filtering saves money vs `amazon_search`
+- Hourly cron job running with real data — detected $170 price drop in one hour
 - Competitive pricing intelligence (multi-seller analysis)
 - Production-ready architecture (retry, validation, graceful fallback)
 - Complete documentation and cost analysis
@@ -372,18 +435,18 @@ python main.py --once
 - Structured parsing eliminates maintenance burden
 - Rich data (more fields than expected)
 - Fast enough for hourly monitoring (~6 min per run)
-- Cost-effective at $242/month for full competitive intelligence
+- Cost-effective at ~$238/month for full competitive intelligence
 
 **Bottom line:** TechNovaAI gets enterprise-grade market intelligence with minimal engineering investment.
 
 ---
 
-## Slide 17: Q&A
+## Slide 19: Q&A
 
 Questions?
 
 **Resources:**
 - GitHub: `github.com/hero710690/oxylabs-poc`
-- Run it yourself: `python main.py --once`
+- Run it yourself: `python main.py`
 - Full feature docs: `docs/FEATURES.md`
 - Cost details: `docs/PRICING.md`

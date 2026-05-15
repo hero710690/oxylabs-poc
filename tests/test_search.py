@@ -61,6 +61,7 @@ def test_search_iphones_returns_search_results():
 
 
 def test_search_iphones_paginates():
+    """Each page is a separate API call."""
     mock_client = MagicMock()
     mock_client.realtime.return_value = MOCK_SEARCH_RESPONSE
 
@@ -80,7 +81,7 @@ def test_search_iphones_limits_to_100():
                             {
                                 "pos": i,
                                 "asin": f"B0TEST{i:03d}",
-                                "title": f"iPhone {i}",
+                                "title": f"Apple iPhone {i}",
                                 "price": 300.0 + i,
                                 "currency": "USD",
                                 "url": f"/dp/B0TEST{i:03d}",

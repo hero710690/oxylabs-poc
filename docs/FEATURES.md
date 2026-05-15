@@ -6,12 +6,12 @@ This document maps every Oxylabs feature used in this PoC to its location in the
 
 | # | Feature | File | Function | Purpose |
 |---|---------|------|----------|---------|
-| 1 | `amazon_search` source | `scraper/search.py` | `search_iphones()` | Paginated search results for "iPhone" on Amazon US |
+| 1 | `amazon` source (URL) | `scraper/search.py` | `search_iphones()` | Scrape brand-filtered search results (Apple iPhones only) |
 | 2 | `amazon_product` source | `scraper/product.py` | `_process_batch()` | Individual product page data extraction |
 | 3 | `amazon_pricing` source | `scraper/pricing.py` | `get_pricing()` | All seller offers for an ASIN (price intelligence) |
 | 4 | `parse: true` | All scraper modules | All payloads | Structured auto-parsed JSON output (no HTML parsing) |
 | 5 | `geo_location` | All scraper modules | All payloads | Locks results to US market (ZIP code: 90210) |
-| 6 | Pagination (`start_page`) | `scraper/search.py` | `search_iphones()` loop | Collects 100 results across 7 pages |
+| 6 | URL-based filtering | `scraper/search.py` | `search_iphones()` | Category + brand filter via Amazon URL params (zero waste) |
 | 7 | Async/Polling mode | `scraper/product.py` | `_poll_until_done()` | Non-blocking batch product scraping |
 | 8 | Async/Callback mode | `scraper/callback.py` | `submit_with_callback()` | Documented alternative — webhook-based delivery |
 | 9 | Batch submission | `scraper/product.py` | `scrape_products()` | Processes 100 products in chunks of 10 |
@@ -24,8 +24,10 @@ This document maps every Oxylabs feature used in this PoC to its location in the
 
 ## Feature Details
 
-### 1. amazon_search (Realtime)
-Used for the search phase. Sends a synchronous request to get paginated search results.
+### 1. amazon source with URL (Realtime)
+Used for the search phase. We pass a pre-filtered Amazon search URL that includes
+category (Cell Phones) and brand (Apple) filters — this ensures every result is an
+actual iPhone, with zero wasted requests on accessories or other brands.
 The `parse: true` flag means Oxylabs returns structured JSON with organic/paid results
 already separated — includes rating, reviews, best seller badges, and sales volume.
 
@@ -46,9 +48,11 @@ structured data. Without this, we'd need to parse raw HTML ourselves.
 `geo_location: "90210"` (ZIP code) ensures we see US-specific pricing, Prime eligibility,
 and delivery estimates — critical for TechNovaAI's US market analysis.
 
-### 6. Pagination
-Amazon shows ~16 organic results per page. We request 7 pages (`start_page: 1..7`) to
-collect 100+ results, then trim to exactly 100.
+### 6. URL-based Filtering
+By passing a filtered Amazon URL (`rh=n:7072561011,p_123:110955`), we apply category
+(Cell Phones) and brand (Apple) filters at the source — meaning Oxylabs only returns
+actual iPhones. This eliminates post-processing waste and ensures the client pays only
+for relevant results. We paginate across 5-7 pages to collect 100+ listings.
 
 ### 7. Async/Polling
 For 100 product pages, synchronous requests would be too slow. Async mode lets us
@@ -124,3 +128,34 @@ Then every scheduled job drops `{job_id}.json` into your bucket automatically.
 
 This is the recommended production approach for TechNovaAI — results land in S3
 every hour with zero client-side infrastructure.
+
+---
+
+## Additional Amazon Sources Available
+
+Beyond the sources used in this PoC, Oxylabs Web Scraper API offers additional Amazon-specific sources that TechNovaAI could leverage as the product matures:
+
+| Source | Purpose | Use Case for TechNovaAI |
+|--------|---------|------------------------|
+| `amazon_sellers` | Scrape a specific seller's storefront | Monitor competitor sellers entering the iPhone resale space |
+| `amazon_bestsellers` | Bestseller rankings by category | Track which iPhones are trending in real-time |
+| `amazon_reviews` | Product reviews for an ASIN | Sentiment analysis on competing listings |
+| `amazon_questions` | Q&A section for a product | Identify common buyer concerns to address in listings |
+
+These sources follow the same patterns as our current implementation (same auth, `parse: true`, `geo_location`, async/realtime modes) and could be integrated with minimal code changes.
+
+---
+
+## Recommended: OxyCopilot (Web Scraper API Playground)
+
+For teams new to web scraping or Oxylabs, [OxyCopilot](https://developers.oxylabs.io/products/web-scraper-api/web-scraper-api-playground/oxycopilot) is an AI-powered assistant built into the Oxylabs dashboard that helps build and test scraping queries without writing code.
+
+**Three capabilities:**
+
+| Feature | What It Does |
+|---------|--------------|
+| **Scraper Builder** | Generates API payloads from natural language prompts (e.g., "scrape Amazon search for iPhones in the US") |
+| **Custom Parser Builder** | Analyzes page HTML and creates parsing instructions to extract specific fields |
+| **Browser Instructions Builder** | Creates page interaction scripts (scroll, click, wait) from natural language |
+
+**How it fits this project:** OxyCopilot generates standard `amazon_search` payloads as a starting point. Our PoC goes a step further by using the `amazon` source with URL-based brand filtering — an optimization that eliminates wasted requests and reduces cost. OxyCopilot is ideal for onboarding, rapid prototyping, and exploring new sources before writing production code.

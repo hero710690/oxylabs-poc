@@ -1,4 +1,0 @@
-# Run the scraper every hour at minute 0
-# Output is appended to /var/log/scraper.log
-0 * * * * root cd /app && /usr/local/bin/python main.py --once >> /var/log/scraper.log 2>&1
-

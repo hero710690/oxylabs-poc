@@ -14,7 +14,9 @@ ASYNC_URL = "https://data.oxylabs.io/v1/queries"
 # Search config
 SEARCH_QUERY = "iPhone"
 SEARCH_DOMAIN = "com"
-SEARCH_PAGES = 7  # ~16-20 results/page → 100+ listings
+SEARCH_PAGES = 5  # ~24 results/page → 120+ listings (need 100)
+# Amazon filtered URL: Cell Phones category + Apple brand only
+SEARCH_URL = "https://www.amazon.com/s?k=iphone&i=mobile&rh=n%3A7072561011%2Cp_123%3A110955&dc&rnid=85457740011"
 RESULTS_LIMIT = 100
 
 # FEATURE: geo_location — lock results to US market (Oxylabs uses ZIP codes)

@@ -14,8 +14,9 @@ def search_iphones(
     limit: int = config.RESULTS_LIMIT,
 ) -> List[SearchResult]:
     """
-    Phase 1: Search Amazon for iPhones using paginated requests.
-    Returns up to `limit` SearchResult objects with position and sponsored metadata.
+    Phase 1: Search Amazon for iPhones using brand-filtered URL.
+    Uses the `amazon` source with a pre-filtered URL (Cell Phones + Apple brand)
+    to ensure only actual iPhone listings are returned — no accessories, no other brands.
     """
     if client is None:
         client = OxylabsClient()
@@ -26,15 +27,12 @@ def search_iphones(
         if len(all_results) >= limit:
             break
 
-        # FEATURE: amazon_search source — structured search results
+        # FEATURE: amazon source with URL — scrape brand-filtered search results
         # FEATURE: parse: true — auto-parsed JSON output
         # FEATURE: geo_location — lock to US market
-        # FEATURE: Pagination (start_page) — collect across multiple pages
         payload = {
-            "source": "amazon_search",
-            "query": config.SEARCH_QUERY,
-            "domain": config.SEARCH_DOMAIN,
-            "start_page": page_num,
+            "source": "amazon",
+            "url": f"{config.SEARCH_URL}&page={page_num}",
             "parse": True,
             "geo_location": config.GEO_LOCATION,
         }
@@ -42,18 +40,19 @@ def search_iphones(
         logger.info(f"Searching page {page_num}/{pages}")
         response = client.realtime(payload)
 
-        page_results = _parse_search_response(response, len(all_results))
+        page_results = _parse_search_response(response["results"][0], len(all_results))
         all_results.extend(page_results)
 
+    logger.info(f"Search returned {len(all_results)} results, using top {limit}")
     return all_results[:limit]
 
 
-def _parse_search_response(response: dict, offset: int) -> List[SearchResult]:
-    """Parse Oxylabs search response into SearchResult models."""
+def _parse_search_response(page_result: dict, offset: int) -> List[SearchResult]:
+    """Parse a single page result from Oxylabs search response."""
     results = []
-    content = response["results"][0]["content"]["results"]
+    content = page_result["content"]["results"]
 
-    # Parse organic results (some may be marked as sponsored within organic)
+    # Parse organic results
     for item in content.get("organic", []):
         results.append(
             SearchResult(

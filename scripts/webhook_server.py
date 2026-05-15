@@ -9,7 +9,7 @@ Note: callback_url delivers a NOTIFICATION (not full results).
 For full result delivery without polling, use storage_type + storage_url (S3/GCS).
 
 Usage:
-    uvicorn webhook_server:app --host 0.0.0.0 --port 8000
+    uvicorn scripts.webhook_server:app --host 0.0.0.0 --port 8000
 
     For local development with public URL:
     ngrok http 8000
@@ -19,10 +19,12 @@ Usage:
 import json
 import logging
 import os
+import sys
 from datetime import datetime, timezone
 
 from fastapi import FastAPI, Request
 
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import config
 
 logging.basicConfig(

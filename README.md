@@ -1,6 +1,6 @@
 # Oxylabs Web Scraper API — Amazon iPhone Scraper PoC
 
-A working proof-of-concept that scrapes the top 100 iPhone listings on Amazon US using [Oxylabs Web Scraper API](https://oxylabs.io/products/scraper-api/web), extracts detailed product data from each listing's product page, and stores results as timestamped JSON files. Runs hourly via APScheduler.
+A working proof-of-concept that scrapes the top 100 iPhone listings on Amazon US using [Oxylabs Web Scraper API](https://oxylabs.io/products/scraper-api/web), extracts detailed product data from each listing's product page, fetches multi-seller pricing intelligence, and stores results as timestamped JSON files. Runs hourly via system crontab.
 
 Built for **TechNovaAI** — a prospective client entering the U.S. smartphone resale market who needs competitive intelligence on pricing, availability, and delivery across top iPhone listings.
 
@@ -8,7 +8,7 @@ Built for **TechNovaAI** — a prospective client entering the U.S. smartphone r
 
 ```
 Scheduler triggers hourly run
-  → Phase 1: Paginated amazon_search (7 pages → 100 listings)
+  → Phase 1: Brand-filtered search (Cell Phones + Apple → 100 iPhones only)
   → Phase 2: Batch async amazon_product (10 at a time, poll for results)
   → Phase 3: amazon_pricing for top 5 ASINs (all seller offers)
   → Validate with Pydantic models
@@ -20,14 +20,14 @@ Scheduler triggers hourly run
 
 | # | Feature | Where | Purpose |
 |---|---------|-------|---------|
-| 1 | `amazon_search` source | `scraper/search.py` | Paginated search results for "iPhone" |
+| 1 | `amazon` source (URL) | `scraper/search.py` | Brand-filtered search (Apple iPhones only, zero waste) |
 | 2 | `amazon_product` source | `scraper/product.py` | Individual product page data extraction |
 | 3 | `amazon_pricing` source | `scraper/pricing.py` | All seller offers for an ASIN (price intelligence) |
 | 4 | `parse: true` | All scraper modules | Structured auto-parsed JSON (no HTML parsing) |
 | 5 | `geo_location` | All scraper modules | Lock results to US market (ZIP code) |
-| 6 | Pagination (`start_page`) | `scraper/search.py` | Collect 100 results across 7 pages |
+| 6 | URL-based filtering | `scraper/search.py` | Category + brand filter via Amazon URL params |
 | 7 | Async/Polling mode | `scraper/product.py` | Non-blocking batch product scraping |
-| 8 | Async/Callback mode | `scraper/callback.py` | Documented alternative (webhook-based) |
+| 8 | Async/Callback mode | `scraper/callback.py` | Webhook-based delivery (production alternative) |
 | 9 | Batch submission | `scraper/product.py` | Process 100 products in chunks of 10 |
 | 10 | Realtime endpoint | `scraper/client.py` | Synchronous search + pricing requests |
 | 11 | Async endpoint | `scraper/client.py` | Background job submission + results retrieval |
@@ -67,48 +67,53 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with your Oxylabs username and password
 
-# Run once
-python main.py --once
-
-# Run with hourly scheduler (APScheduler)
+# Run once (demo/testing)
 python main.py
 
-# --- Docker (production) ---
+# Generate HTML report from latest output
+python scripts/report.py
 
-# One-shot run
+# Test Oxylabs Scheduler API (create → verify → pause → delete)
+python scripts/test_scheduler.py
+
+# Compare amazon_search vs amazon (URL) source
+python scripts/compare_sources.py
+
+# Schedule hourly via system crontab
+# crontab -e, then add:
+# 0 * * * * cd /path/to/oxylabs-poc && python main.py >> output/cron.log 2>&1
+
+# --- Docker (optional, for production) ---
 docker compose run --rm scraper
-
-# Self-scheduling (cron inside container, runs every hour)
-docker compose up -d scraper-cron
-
-# View logs
-docker compose exec scraper-cron tail -f /var/log/scraper.log
 ```
 
 ## Project Structure
 
 ```
 oxylabs-poc/
-├── main.py                    # Entry point + APScheduler
-├── Dockerfile                 # Single-run container (for external schedulers)
-├── Dockerfile.cron            # Self-scheduling container (cron inside)
-├── docker-compose.yml         # Both modes: one-shot + hourly cron
-├── crontab                    # Cron schedule definition
+├── main.py                    # Entry point (single run, cron handles scheduling)
 ├── config.py                  # Credentials, constants
 ├── models.py                  # Pydantic validation schemas
+├── Dockerfile                 # Container image
+├── docker-compose.yml         # Docker run config
 ├── scraper/
-│   ├── client.py              # Oxylabs API wrapper (retry, async)
-│   ├── search.py              # Phase 1: paginated search
+│   ├── client.py              # Oxylabs API wrapper (retry, async, scheduler)
+│   ├── search.py              # Phase 1: brand-filtered search (Apple iPhones only)
 │   ├── product.py             # Phase 2: batch async product pages
 │   ├── pricing.py             # Phase 3: multi-seller pricing
-│   └── callback.py            # Callback mode (documented alternative)
-├── output/                    # Timestamped JSON outputs + analysis
-├── tests/                     # Unit tests
+│   └── callback.py            # Callback + Scheduler + Cloud Storage delivery
+├── scripts/
+│   ├── report.py              # HTML report/dashboard generator
+│   ├── test_scheduler.py      # Oxylabs Scheduler API test script
+│   ├── compare_sources.py     # amazon_search vs amazon (URL) comparison
+│   └── webhook_server.py      # FastAPI callback notification receiver
+├── output/                    # Timestamped JSON outputs + HTML report
+├── tests/                     # Unit tests (18 tests)
 └── docs/
-    ├── FEATURES.md            # Feature → code mapping
-    ├── PRICING.md             # Cost breakdown + plan recommendation
+    ├── FEATURES.md            # Feature → code mapping (15 features)
+    ├── PRICING.md             # Cost breakdown (~$238/month)
     ├── FEEDBACK.md            # API developer experience feedback
-    └── PRESENTATION_NOTES.md  # Demo talking points
+    └── PRESENTATION.md        # Full presentation (19 slides)
 ```
 
 ## Output Example
@@ -116,7 +121,7 @@ oxylabs-poc/
 ```json
 {
   "metadata": {
-    "scraped_at": "2026-05-14T04:38:31.135Z",
+    "scraped_at": "2026-05-15T05:22:46.214Z",
     "total_products": 100,
     "query": "iPhone",
     "geo_location": "90210"
@@ -126,7 +131,7 @@ oxylabs-poc/
       "position": 1,
       "asin": "B0CMPMY9ZZ",
       "title": "Apple iPhone 15, 128GB, Black - Unlocked (Renewed)",
-      "price": 426.77,
+      "price": 399.00,
       "currency": "USD",
       "is_sponsored": false,
       "is_prime": true,
@@ -138,8 +143,16 @@ oxylabs-poc/
         "screen_size": "6.1 Inches"
       },
       "delivery": "FREE delivery Monday, May 18 | Prime members Overnight, 7 AM - 11 AM",
+      "pricing_offers": [
+        {
+          "seller_name": "Ships from Macalegin Electronics",
+          "price": 387.11,
+          "condition": "Refurbished - Excellent",
+          "is_fulfilled_by_amazon": false
+        }
+      ],
       "url": "https://www.amazon.com/dp/B0CMPMY9ZZ",
-      "scraped_at": "2026-05-14T04:38:31.135Z"
+      "scraped_at": "2026-05-15T05:22:46.214Z"
     }
   ]
 }
@@ -149,24 +162,23 @@ oxylabs-poc/
 
 | Option | Best For | How |
 |--------|----------|-----|
-| **APScheduler** (built-in) | Development/testing | `python main.py` (runs in-process) |
-| **Docker + cron** | Production self-hosted | `docker compose up -d scraper-cron` |
-| **External scheduler** | Cloud deployment | Trigger `docker compose run --rm scraper` via AWS EventBridge, GCP Cloud Scheduler, K8s CronJob |
-| **Oxylabs Scheduler + Callback** | Zero infrastructure | Oxylabs runs jobs on a cron schedule AND delivers results via callback URL — no cron, no polling, fully managed |
+| **System crontab** | Local / self-hosted | `0 * * * * cd /path && python main.py` |
+| **Docker + crontab** | Production self-hosted | `0 * * * * docker compose run --rm scraper` |
+| **Cloud scheduler** | Cloud deployment | AWS EventBridge / GCP Cloud Scheduler / K8s CronJob triggers container |
+| **Oxylabs Scheduler** | Zero infrastructure | Oxylabs runs jobs on their side, delivers to S3/GCS or webhook |
 
-**Note on Oxylabs Scheduler:** Combines scheduling + callback delivery. TechNovaAI just needs a webhook endpoint to receive results. See `scraper/callback.py` for the submission code and `webhook_server.py` for the FastAPI receiver.
-
-For this PoC, we use **Docker + cron** — self-contained, no external dependencies, runs anywhere.
+**Architecture note:** Our 3-phase pipeline (search → product → pricing) requires our own scheduler since it chains multiple API calls. The Oxylabs Scheduler is ideal for simpler single-source jobs with direct delivery to cloud storage. Both approaches are implemented and tested in this PoC.
 
 ## Running Tests
 
 ```bash
 pytest tests/ -v
+# 18 tests covering search, product, pricing, client, models, and main
 ```
 
 ## Documentation
 
-- [FEATURES.md](docs/FEATURES.md) — Detailed feature usage guide
-- [PRICING.md](docs/PRICING.md) — Cost calculation (~$242/month) and plan recommendation
+- [FEATURES.md](docs/FEATURES.md) — Detailed feature usage guide (15 features + additional sources)
+- [PRICING.md](docs/PRICING.md) — Cost calculation (~$238/month) and plan recommendation
 - [FEEDBACK.md](docs/FEEDBACK.md) — Developer experience feedback for Oxylabs
-- [PRESENTATION_NOTES.md](docs/PRESENTATION_NOTES.md) — Demo agenda and talking points
+- [PRESENTATION.md](docs/PRESENTATION.md) — Full 17-slide presentation for TechNovaAI
