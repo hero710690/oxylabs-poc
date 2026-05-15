@@ -27,9 +27,6 @@ Getting started was straightforward — username/password auth, simple JSON payl
   - Evidence: ASIN B0F7LP2K5D → `"description": ["https://m.media-amazon.com/images/S/aplus-media-library-service-media/9e91bec9...", ...]` (list of 10 image URLs)
   - Workaround: `if isinstance(description, list): description = None`
 
-- **Results per page is lower than expected.** Amazon search returned ~16 organic results per page. Not a bug, but it meant more pagination than anticipated (~7 pages for 100 results instead of 3).
-  - Evidence: Page 1 returned 16 organic + 1 paid = 17 total results
-  - At 16/page: 3 pages = ~48 results (not enough), 7 pages = ~112 (trim to 100)
 
 ## The "Feel" Summary
 
