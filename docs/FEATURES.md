@@ -19,7 +19,8 @@ This document maps every Oxylabs feature used in this PoC to its location in the
 | 11 | Async endpoint | `scraper/client.py` | `async_submit()` | Background job submission |
 | 12 | Async results retrieval | `scraper/client.py` | `async_get_results()` | Fetch completed job results |
 | 13 | `context: autoselect_variant` | `scraper/product.py` | `_process_batch()` | Accurate buybox pricing for variant products |
-| 14 | Oxylabs Scheduler | `scraper/callback.py` | `submit_scheduled()` | Recurring jobs with callback delivery (no cron needed) |
+| 14 | Oxylabs Scheduler | `scraper/callback.py` | `submit_scheduled()` | Recurring jobs on cron schedule (no infrastructure needed) |
+| 15 | Cloud Storage delivery | `scraper/callback.py` | `submit_scheduled()` | Results pushed directly to client's S3/GCS bucket |
 
 ## Feature Details
 
@@ -71,9 +72,9 @@ iPhones come in many storage/color variants. Without `autoselect_variant: true`,
 the API might return pricing for a different variant than the one shown. This parameter
 appends `th=1&psc=1` to get accurate buybox/pricing data for the primary variant.
 
-### 14. Oxylabs Scheduler + Callback
-Oxylabs can run scraping jobs on a recurring cron schedule AND deliver results via
-callback URL — eliminating both cron infrastructure AND polling. Fully managed pipeline.
+### 14. Oxylabs Scheduler
+Oxylabs runs scraping jobs on a recurring cron schedule — no cron, APScheduler,
+or scheduling infrastructure needed on the client side.
 
 **API:** `POST https://data.oxylabs.io/v1/schedules`
 
@@ -89,18 +90,37 @@ callback URL — eliminating both cron infrastructure AND polling. Fully managed
       "query": "iPhone",
       "domain": "com",
       "parse": true,
-      "geo_location": "90210"
+      "geo_location": "90210",
+      "storage_type": "s3",
+      "storage_url": "my-bucket/oxylabs-results"
     }
   ]
 }
 ```
 
-`callback_url` is supported both at the schedule level (applies to all items) and
-per-item. Combined with `webhook_server.py`, this creates a zero-infrastructure
-pipeline: Oxylabs handles timing + scraping + delivery.
+**Result delivery options:**
+- `callback_url` — notification only (job done ping + link to fetch results)
+- `storage_type` + `storage_url` — full results pushed directly to client's bucket
 
 Additional Scheduler endpoints:
 - `GET /v1/schedules/{id}` — check schedule info
 - `PUT /v1/schedules/{id}/state` — pause/resume (`{"active": false}`)
 
 See: https://developers.oxylabs.io/products/web-scraper-api/features/scheduler
+
+### 15. Cloud Storage Delivery
+Results can be pushed directly to the client's cloud storage bucket — no polling,
+no webhook server, no infrastructure needed beyond the bucket itself.
+
+**Supported providers:**
+| Provider | `storage_type` | `storage_url` format |
+|----------|---------------|---------------------|
+| Amazon S3 | `s3` | `bucket-name/path` |
+| Google Cloud Storage | `gcs` | `bucket-name/path` |
+| S3-compatible (Alibaba OSS, etc.) | `s3_compatible` | `https://KEY:SECRET@endpoint/bucket/path` |
+
+**Setup:** Grant Oxylabs' service account write access to your bucket (one-time).
+Then every scheduled job drops `{job_id}.json` into your bucket automatically.
+
+This is the recommended production approach for TechNovaAI — results land in S3
+every hour with zero client-side infrastructure.

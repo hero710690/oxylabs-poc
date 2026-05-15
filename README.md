@@ -33,7 +33,8 @@ Scheduler triggers hourly run
 | 11 | Async endpoint | `scraper/client.py` | Background job submission + results retrieval |
 | 12 | `context: autoselect_variant` | `scraper/product.py` | Accurate buybox pricing for variant products |
 | 13 | Async results retrieval | `scraper/client.py` | Fetch completed job results from separate endpoint |
-| 14 | Oxylabs Scheduler + Callback | `scraper/callback.py` | Recurring jobs with webhook delivery (zero infrastructure) |
+| 14 | Oxylabs Scheduler | `scraper/callback.py` | Recurring jobs on cron schedule (no cron needed) |
+| 15 | Cloud Storage delivery | `scraper/callback.py` | Results pushed directly to client's S3/GCS bucket |
 
 See [docs/FEATURES.md](docs/FEATURES.md) for detailed explanations of each feature.
 

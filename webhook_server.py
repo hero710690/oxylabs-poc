@@ -1,9 +1,12 @@
 """
-Webhook server for receiving Oxylabs Scheduler callback results.
+Webhook server for receiving Oxylabs callback notifications.
 
-FEATURE: Oxylabs Scheduler + Callback URL
-Instead of running our own cron/scheduler, Oxylabs can run jobs on a schedule
-and POST results directly to this endpoint when done.
+FEATURE: Callback URL — job completion notification.
+When a job finishes, Oxylabs POSTs a notification here with a link to fetch results.
+This server receives the notification and fetches the actual results.
+
+Note: callback_url delivers a NOTIFICATION (not full results).
+For full result delivery without polling, use storage_type + storage_url (S3/GCS).
 
 Usage:
     uvicorn webhook_server:app --host 0.0.0.0 --port 8000
@@ -34,26 +37,46 @@ app = FastAPI(title="Oxylabs Webhook Receiver")
 @app.post("/webhooks/oxylabs")
 async def receive_oxylabs_callback(request: Request):
     """
-    Receive scraping results from Oxylabs via callback.
+    Receive job completion notification from Oxylabs.
 
-    Oxylabs POSTs the same JSON structure as their async results endpoint:
-    {
-        "id": "job_id",
-        "status": "done",
-        "results": [{"content": {...}}]
-    }
+    Oxylabs POSTs a notification containing:
+    - Job metadata (id, status)
+    - _links with a "results" URL to fetch actual data
+
+    This handler receives the notification and fetches the full results.
     """
     data = await request.json()
 
     job_id = data.get("id", "unknown")
     status = data.get("status")
-    results = data.get("results", [])
 
-    logger.info(f"Received callback for job {job_id} (status: {status}, results: {len(results)})")
+    logger.info(f"Received callback notification for job {job_id} (status: {status})")
 
     if status != "done":
         logger.warning(f"Job {job_id} status is '{status}', skipping")
         return {"status": "ignored", "reason": f"job status is {status}"}
+
+    # Fetch actual results using the link from the notification
+    results_url = None
+    links = data.get("_links", [])
+    for link in links:
+        if link.get("rel") == "results":
+            results_url = link.get("href")
+            break
+
+    if results_url:
+        import requests as http_requests
+        logger.info(f"Fetching results from {results_url}")
+        resp = http_requests.get(
+            results_url,
+            auth=(config.OXYLABS_USERNAME, config.OXYLABS_PASSWORD),
+            timeout=60,
+        )
+        resp.raise_for_status()
+        results_data = resp.json()
+    else:
+        logger.warning(f"No results link in callback, saving notification only")
+        results_data = data
 
     # Save results to output directory
     os.makedirs(config.OUTPUT_DIR, exist_ok=True)
@@ -61,9 +84,9 @@ async def receive_oxylabs_callback(request: Request):
     filepath = os.path.join(config.OUTPUT_DIR, f"callback_{job_id}_{timestamp}.json")
 
     with open(filepath, "w") as f:
-        json.dump(data, f, indent=2, default=str)
+        json.dump(results_data, f, indent=2, default=str)
 
-    logger.info(f"Saved callback results to {filepath}")
+    logger.info(f"Saved results to {filepath}")
     return {"status": "received", "job_id": job_id, "saved_to": filepath}
 
 
