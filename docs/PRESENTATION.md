@@ -230,9 +230,17 @@ python main.py --once
 | Language | Python 3.11+ | Rapid prototyping, rich ecosystem |
 | HTTP Client | requests + tenacity | Retry with exponential backoff |
 | Validation | Pydantic | Type-safe data, clear error messages |
-| Scheduling | APScheduler | Lightweight, no external deps |
+| Scheduling | Docker + cron | Production-ready, restartable, cloud-agnostic |
 | Config | python-dotenv | Secure credential management |
+| Container | Docker + docker-compose | Reproducible deployment |
 | Output | JSON files | Simple, portable, pipeline-ready |
+
+**Deployment options:**
+| Option | Trade-off |
+|--------|-----------|
+| `docker compose up -d scraper-cron` | Self-contained, runs anywhere |
+| External scheduler (AWS/GCP/K8s) | Better monitoring, cloud-native |
+| **Oxylabs Scheduler** | Zero infrastructure — Oxylabs handles timing + delivery via callback URL |
 
 **Lines of code:** ~500 (excluding tests)
 **Setup time:** Under 5 minutes (clone, install, add credentials, run)
