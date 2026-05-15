@@ -71,9 +71,9 @@ iPhones come in many storage/color variants. Without `autoselect_variant: true`,
 the API might return pricing for a different variant than the one shown. This parameter
 appends `th=1&psc=1` to get accurate buybox/pricing data for the primary variant.
 
-### 14. Oxylabs Scheduler
-Oxylabs can run scraping jobs on a recurring schedule — eliminating the need for
-cron, APScheduler, or any client-side scheduling infrastructure.
+### 14. Oxylabs Scheduler + Callback
+Oxylabs can run scraping jobs on a recurring cron schedule AND deliver results via
+callback URL — eliminating both cron infrastructure AND polling. Fully managed pipeline.
 
 **API:** `POST https://data.oxylabs.io/v1/schedules`
 
@@ -82,6 +82,7 @@ cron, APScheduler, or any client-side scheduling infrastructure.
 {
   "cron": "0 * * * *",
   "end_time": "2027-01-01 00:00:00",
+  "callback_url": "https://your-server.com/webhooks/oxylabs",
   "items": [
     {
       "source": "amazon_search",
@@ -94,9 +95,12 @@ cron, APScheduler, or any client-side scheduling infrastructure.
 }
 ```
 
-**Note:** The Scheduler does not support `callback_url` — results must be retrieved
-via polling (`GET /v1/queries/{id}/results`). The `callback_url` feature is available
-on regular async submissions (`POST /v1/queries`) and is demonstrated separately in
-`scraper/callback.py` + `webhook_server.py`.
+`callback_url` is supported both at the schedule level (applies to all items) and
+per-item. Combined with `webhook_server.py`, this creates a zero-infrastructure
+pipeline: Oxylabs handles timing + scraping + delivery.
+
+Additional Scheduler endpoints:
+- `GET /v1/schedules/{id}` — check schedule info
+- `PUT /v1/schedules/{id}/state` — pause/resume (`{"active": false}`)
 
 See: https://developers.oxylabs.io/products/web-scraper-api/features/scheduler

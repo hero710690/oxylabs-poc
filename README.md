@@ -33,6 +33,7 @@ Scheduler triggers hourly run
 | 11 | Async endpoint | `scraper/client.py` | Background job submission + results retrieval |
 | 12 | `context: autoselect_variant` | `scraper/product.py` | Accurate buybox pricing for variant products |
 | 13 | Async results retrieval | `scraper/client.py` | Fetch completed job results from separate endpoint |
+| 14 | Oxylabs Scheduler + Callback | `scraper/callback.py` | Recurring jobs with webhook delivery (zero infrastructure) |
 
 See [docs/FEATURES.md](docs/FEATURES.md) for detailed explanations of each feature.
 
@@ -150,9 +151,9 @@ oxylabs-poc/
 | **APScheduler** (built-in) | Development/testing | `python main.py` (runs in-process) |
 | **Docker + cron** | Production self-hosted | `docker compose up -d scraper-cron` |
 | **External scheduler** | Cloud deployment | Trigger `docker compose run --rm scraper` via AWS EventBridge, GCP Cloud Scheduler, K8s CronJob |
-| **Oxylabs Scheduler** | Fully managed timing | Oxylabs runs jobs on a cron schedule — no cron infrastructure needed. Results retrieved via polling. |
+| **Oxylabs Scheduler + Callback** | Zero infrastructure | Oxylabs runs jobs on a cron schedule AND delivers results via callback URL — no cron, no polling, fully managed |
 
-**Note on Oxylabs Scheduler:** Eliminates scheduling infrastructure (no cron, no APScheduler), but results must be polled — `callback_url` is not supported on the Scheduler endpoint. For callback delivery, use regular async submissions with `callback_url` (see `scraper/callback.py` + `webhook_server.py`).
+**Note on Oxylabs Scheduler:** Combines scheduling + callback delivery. TechNovaAI just needs a webhook endpoint to receive results. See `scraper/callback.py` for the submission code and `webhook_server.py` for the FastAPI receiver.
 
 For this PoC, we use **Docker + cron** — self-contained, no external dependencies, runs anywhere.
 
