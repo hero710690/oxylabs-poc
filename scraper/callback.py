@@ -1,18 +1,28 @@
 """
 FEATURE: Async/Callback mode + Oxylabs Scheduler.
 
-Two related features:
-1. Callback mode: Instead of polling, Oxylabs POSTs results to your endpoint.
-2. Scheduler: Oxylabs runs jobs on a recurring schedule and delivers via callback.
+Two separate features that solve different parts of the problem:
 
-Combined, these eliminate both polling AND cron — Oxylabs handles everything.
+1. Callback mode (on regular async /v1/queries):
+   - Eliminates polling — Oxylabs POSTs results to your endpoint when done.
+   - You still need to trigger the job yourself (cron/scheduler).
 
-Usage:
+2. Scheduler (/v1/schedules):
+   - Eliminates cron — Oxylabs runs jobs on a recurring schedule.
+   - You poll to retrieve results (callback_url is NOT supported on Scheduler).
+
+Together with Docker+cron or a cloud scheduler, these cover all production needs.
+
+Usage (callback mode):
     1. Start the webhook server: uvicorn webhook_server:app --port 8000
     2. Expose publicly (dev): ngrok http 8000
-    3. Submit a scheduled job: python -c "from scraper.callback import submit_scheduled; submit_scheduled('https://your-ngrok-url/webhooks/oxylabs')"
+    3. Submit job with callback: python -c "from scraper.callback import submit_with_callback; submit_with_callback('B0CMPMY9ZZ', 'https://your-ngrok-url/webhooks/oxylabs')"
 
-See webhook_server.py for the receiving endpoint.
+Usage (scheduler mode):
+    1. Create schedule: python -c "from scraper.callback import submit_scheduled; submit_scheduled()"
+    2. Poll for results periodically or retrieve via /v1/queries/{id}/results
+
+See webhook_server.py for the callback receiving endpoint.
 """
 
 import logging
@@ -50,28 +60,25 @@ def submit_with_callback(
 
 
 def submit_scheduled(
-    callback_url: str,
     end_time: str = "2027-01-01 00:00:00",
     client: OxylabsClient = None,
 ) -> dict:
     """
-    FEATURE: Oxylabs Scheduler — recurring job with callback delivery.
+    FEATURE: Oxylabs Scheduler — recurring job execution.
 
-    Creates a scheduled job that Oxylabs runs every hour and delivers
-    results via callback URL. No cron, no polling needed.
+    Creates a scheduled job that Oxylabs runs every hour automatically.
+    Results are retrieved via polling (callback_url not supported on Scheduler).
 
     Endpoint: POST https://data.oxylabs.io/v1/schedules
     See: https://developers.oxylabs.io/products/web-scraper-api/features/scheduler
 
     Args:
-        callback_url: Webhook URL to receive results (e.g. https://your-server/webhooks/oxylabs)
         end_time: When the schedule expires (format: "YYYY-MM-DD HH:MM:SS")
     """
     if client is None:
         client = OxylabsClient()
 
     # FEATURE: Oxylabs Scheduler — cron expression + items + end_time
-    # FEATURE: callback_url — results delivered via webhook
     payload = {
         "cron": "0 * * * *",  # Every hour at minute 0
         "end_time": end_time,
@@ -82,12 +89,11 @@ def submit_scheduled(
                 "domain": config.SEARCH_DOMAIN,
                 "parse": True,
                 "geo_location": config.GEO_LOCATION,
-                "callback_url": callback_url,
             },
         ],
     }
 
-    logger.info(f"Creating scheduled job (hourly until {end_time}) with callback to {callback_url}")
+    logger.info(f"Creating scheduled job (hourly until {end_time})")
     response = client.create_schedule(payload)
     logger.info(f"Schedule created: {response}")
     return response

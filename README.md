@@ -150,9 +150,9 @@ oxylabs-poc/
 | **APScheduler** (built-in) | Development/testing | `python main.py` (runs in-process) |
 | **Docker + cron** | Production self-hosted | `docker compose up -d scraper-cron` |
 | **External scheduler** | Cloud deployment | Trigger `docker compose run --rm scraper` via AWS EventBridge, GCP Cloud Scheduler, K8s CronJob |
-| **Oxylabs Scheduler** | Fully managed | Oxylabs runs jobs on a schedule and delivers results via callback URL — no cron, no server to manage the trigger |
+| **Oxylabs Scheduler** | Fully managed timing | Oxylabs runs jobs on a cron schedule — no cron infrastructure needed. Results retrieved via polling. |
 
-**Note on Oxylabs Scheduler:** It requires a callback URL (webhook endpoint) to receive results. TechNovaAI would need a publicly accessible server to accept the POST. See `scraper/callback.py` for the callback pattern. This is ideal once TechNovaAI has a backend service deployed.
+**Note on Oxylabs Scheduler:** Eliminates scheduling infrastructure (no cron, no APScheduler), but results must be polled — `callback_url` is not supported on the Scheduler endpoint. For callback delivery, use regular async submissions with `callback_url` (see `scraper/callback.py` + `webhook_server.py`).
 
 For this PoC, we use **Docker + cron** — self-contained, no external dependencies, runs anywhere.
 
