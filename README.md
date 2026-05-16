@@ -116,7 +116,6 @@ oxylabs-poc/
     ├── FEATURES.md            # Feature → code mapping (15 features)
     ├── PRICING.md             # Cost breakdown (~$49/month on Micro plan)
     ├── FEEDBACK.md            # API developer experience feedback
-    └── PRESENTATION.pdf       # Presentation slides (see submission)
 ```
 
 ## Output Example
@@ -184,4 +183,4 @@ pytest tests/ -v
 - [FEATURES.md](docs/FEATURES.md) — Detailed feature usage guide (15 features + additional sources)
 - [PRICING.md](docs/PRICING.md) — Cost calculation (~$49/month Micro plan) and plan recommendation
 - [FEEDBACK.md](docs/FEEDBACK.md) — Developer experience feedback for Oxylabs
-- `docs/PRESENTATION.pdf` — Full presentation slides (attached separately)
+- Presentation slides — attached separately as PDF
