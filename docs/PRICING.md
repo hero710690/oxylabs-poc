@@ -48,7 +48,7 @@ All plans include: scheduler, batch queries, custom parser, cloud integration, h
 |----------|-------------|---------------|-----------------|
 | Hourly, all day | 79,200 | $49 (plan min) | $99 (plan min) |
 | Business hours only (10 runs/day) | 33,000 | $49 (plan min) | $99 (plan min) |
-| Hourly + all 100 ASINs priced | 175,200 | $87.60 | $99 (plan min) |
+| Hourly + all 100 ASINs priced | 147,600 | Over cap | $99 (plan min) |
 | Hourly + all 100 ASINs + 2x search | 271,200 | Over cap | $122.04 |
 
 ## Recommendation
@@ -62,7 +62,7 @@ Rationale:
 
 **Scale path:**
 1. Start with Micro ($49/mo) — current pipeline (search + products + top 5 pricing)
-2. Upgrade to Starter ($99/mo) — when expanding pricing to all 100 ASINs (~175K requests)
+2. Upgrade to Starter ($99/mo) — when expanding pricing to all 100 ASINs (~148K requests)
 3. Upgrade to Advanced ($249/mo) — when adding multiple categories or marketplaces
 
 ## ROI Context
