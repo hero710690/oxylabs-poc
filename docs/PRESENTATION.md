@@ -302,40 +302,25 @@ We tested both available approaches and built a comparison script (`scripts/comp
 | Product pages (`amazon_product`) | 100 |
 | Pricing pages (`amazon_pricing`) | 5 |
 
-**Monthly estimate (24 runs/day):**
-| Item | Requests | Cost |
-|------|----------|------|
-| Search | 3,600 | ~$10.80 |
-| Product | 72,000 | ~$216.00 |
-| Pricing | 3,600 | ~$10.80 |
-| **Total** | **79,200** | **~$237.60/month** |
+**Monthly volume (24 runs/day): 79,200 requests**
 
-**Cost optimization options:**
-- Business hours only (10 runs/day) → ~$100/month
-- Top 20 hourly, rest daily → ~$150/month
-- Volume discount from Oxylabs sales team
+**Plan options:**
+| Plan | Monthly Price | Rate (Amazon) | Fits? |
+|------|--------------|---------------|-------|
+| **Micro** | $49/mo | $0.50/1K | Yes (79K < 98K cap) |
+| **Starter** | $99/mo | $0.45/1K | Yes (room to scale 2x) |
+| **Advanced** | $249/mo | $0.40/1K | For multi-category expansion |
 
----
+**Recommendation:** Start with Micro ($49/mo). Upgrade to Starter when expanding pricing to all 100 ASINs (~175K requests/mo).
 
-## Slide 14: ROI Context
-
-**~$238/month buys you:**
-- Real-time competitive intelligence on 100 listings
-- Multi-seller pricing data (who's undercutting whom)
-- Delivery & fulfillment tracking
-- Zero engineering time on anti-bot, proxy management, HTML parsing
-
-**Compare to alternatives:**
-| Approach | Monthly Cost | Engineering Effort |
-|----------|-------------|-------------------|
-| Oxylabs Web Scraper API | ~$238 | Low (this PoC) |
-| Build custom scraper + proxies | $500+ (proxies alone) | High (ongoing maintenance) |
-| Manual monitoring | $0 | Impossible at scale |
-| Third-party data provider | $1,000+ | Medium (integration) |
+**Scaling scenarios:**
+- Current pipeline (top 5 pricing): 79K requests → **$49/mo (Micro)**
+- Full pricing (all 100 ASINs): 175K requests → **$99/mo (Starter)**
+- Multi-category expansion: 300K+ requests → **$249/mo (Advanced)**
 
 ---
 
-## Slide 15: Next Steps
+## Slide 14: Next Steps
 
 **Immediate (Week 1-2):**
 - Connect to PostgreSQL/TimescaleDB for persistent storage
@@ -355,13 +340,13 @@ We tested both available approaches and built a comparison script (`scripts/comp
 
 ---
 
-## Slide 16: Why Oxylabs Over Competitors
+## Slide 15: Why Oxylabs Over Competitors
 
 ### Market Landscape
 
 | Provider | Amazon Product | Pricing | Best For |
 |----------|---------------|---------|----------|
-| **Oxylabs** (our choice) | Dedicated Amazon API, 5 endpoints, 129 parsed fields | ~$3.00/1K requests | Enterprise structured data, high reliability |
+| **Oxylabs** (our choice) | Dedicated Amazon API, 5 endpoints, 129 parsed fields | $0.40–$0.50/1K (plan-based) | All-in-one (proxies + parsing + scheduling), 99.9% uptime, pay-per-success |
 | **Bright Data** | Web Scraper API + ready datasets | $1.50/1K PAYG or $499/mo | Largest IP network (400M+), dataset buyers |
 | **ScraperAPI** | Structured Data endpoint | ~$49/mo (150K calls) | Developer-friendly, AI/LLM integrations |
 | **Decodo** (Smartproxy) | eCommerce Scraping API | $0.09/1K requests | Budget-conscious, high volume |
@@ -373,12 +358,13 @@ We tested both available approaches and built a comparison script (`scripts/comp
 
 | Criteria | Oxylabs Advantage |
 |----------|-------------------|
+| **All-in-one** | Proxies + parsing + scheduling + delivery in one API — no multi-tool setup |
+| **Reliability** | 99.9% uptime, zero blocks across 200+ requests in our PoC |
+| **Pay-per-success** | Failed requests (5xx/6xx) not charged — transparent billing |
 | **Data richness** | 129 parsed fields per product — more than any competitor |
 | **Amazon-specific sources** | Dedicated `amazon_search`, `amazon_product`, `amazon_pricing` — purpose-built |
-| **Reliability** | Zero blocks across 200+ requests in our PoC, self-healing parsers |
-| **Structured output** | `parse: true` returns clean JSON — no HTML parsing maintenance |
+| **Proxy network** | 177M+ proxies across 195 countries — geo-targeting down to ZIP code |
 | **Async at scale** | Submit hundreds of jobs, poll or callback — production-ready |
-| **Geo-targeting** | ZIP-code level precision for US market data |
 
 ### When Competitors Might Be Better
 
@@ -391,7 +377,7 @@ We tested both available approaches and built a comparison script (`scripts/comp
 
 ---
 
-## Slide 17: Other Oxylabs Products to Consider
+## Slide 16: Other Oxylabs Products to Consider
 
 **Additional Amazon Sources (same API, ready to integrate):**
 
@@ -419,7 +405,7 @@ If TechNovaAI's team is new to web scraping, Oxylabs' built-in [OxyCopilot](http
 
 ---
 
-## Slide 18: Summary
+## Slide 17: Summary
 
 **What we delivered:**
 - Fully working scraper: 100 iPhones, 50+ fields each, hourly refresh
@@ -435,13 +421,13 @@ If TechNovaAI's team is new to web scraping, Oxylabs' built-in [OxyCopilot](http
 - Structured parsing eliminates maintenance burden
 - Rich data (more fields than expected)
 - Fast enough for hourly monitoring (~6 min per run)
-- Cost-effective at ~$238/month for full competitive intelligence
+- Cost-effective at $49–99/month for full competitive intelligence
 
 **Bottom line:** TechNovaAI gets enterprise-grade market intelligence with minimal engineering investment.
 
 ---
 
-## Slide 19: Q&A
+## Slide 18: Q&A
 
 Questions?
 

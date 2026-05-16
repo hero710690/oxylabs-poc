@@ -52,36 +52,22 @@ def _parse_search_response(page_result: dict, offset: int) -> List[SearchResult]
     results = []
     content = page_result["content"]["results"]
 
-    # Parse organic results
-    for item in content.get("organic", []):
-        results.append(
-            SearchResult(
-                position=offset + len(results) + 1,
-                asin=item["asin"],
-                title=item.get("title", ""),
-                price=item.get("price"),
-                currency=item.get("currency"),
-                is_sponsored=item.get("is_sponsored", False),
-                is_prime=item.get("is_prime", False),
-                rating=item.get("rating"),
-                reviews_count=item.get("reviews_count"),
-                is_best_seller=item.get("best_seller", False),
-                is_amazons_choice=item.get("is_amazons_choice", False),
-                sales_volume=item.get("sales_volume"),
-                url=f"https://www.amazon.com/dp/{item['asin']}",
-            )
-        )
+    # Combine organic and sponsored, sort by actual page position
+    organic = content.get("organic", [])
+    paid = content.get("paid", [])
 
-    # Parse sponsored/paid results
-    for item in content.get("paid", []):
+    all_items = [(item, False) for item in organic] + [(item, True) for item in paid]
+    all_items.sort(key=lambda x: x[0].get("pos", 9999))
+
+    for item, is_paid in all_items:
         results.append(
             SearchResult(
-                position=offset + len(results) + 1,
+                position=offset + item.get("pos", len(results) + 1),
                 asin=item["asin"],
                 title=item.get("title", ""),
                 price=item.get("price"),
                 currency=item.get("currency"),
-                is_sponsored=True,
+                is_sponsored=is_paid,
                 is_prime=item.get("is_prime", False),
                 rating=item.get("rating"),
                 reviews_count=item.get("reviews_count"),
