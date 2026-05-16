@@ -27,14 +27,18 @@ Scheduler triggers hourly run
 | 5 | `geo_location` | All scraper modules | Lock results to US market (ZIP code) |
 | 6 | URL-based filtering | `scraper/search.py` | Category + brand filter via Amazon URL params |
 | 7 | Async/Polling mode | `scraper/product.py` | Non-blocking batch product scraping |
-| 8 | Async/Callback mode | `scripts/webhook_server.py` | Webhook-based delivery notification receiver |
-| 9 | Batch submission | `scraper/product.py` | Process 100 products in chunks of 10 |
-| 10 | Realtime endpoint | `scraper/client.py` | Synchronous search + pricing requests |
-| 11 | Async endpoint | `scraper/client.py` | Background job submission + results retrieval |
-| 12 | `context: autoselect_variant` | `scraper/product.py` | Accurate buybox pricing for variant products |
-| 13 | Async results retrieval | `scraper/client.py` | Fetch completed job results from separate endpoint |
-| 14 | Oxylabs Scheduler | `scripts/test_scheduler.py` | Recurring jobs on cron schedule (tested: create → pause → delete) |
-| 15 | Cloud Storage delivery | `scraper/client.py` | Results pushed directly to client's S3/GCS via storage_type param |
+| 8 | Batch submission | `scraper/product.py` | Process 100 products in chunks of 10 |
+| 9 | Realtime endpoint | `scraper/client.py` | Synchronous search + pricing requests |
+| 10 | Async endpoint | `scraper/client.py` | Background job submission + results retrieval |
+| 11 | `context: autoselect_variant` | `scraper/product.py` | Accurate buybox pricing for variant products |
+| 12 | Async results retrieval | `scraper/client.py` | Fetch completed job results from separate endpoint |
+| 13 | Oxylabs Scheduler | `scripts/test_scheduler.py` | Recurring jobs on cron schedule (tested: create → pause → delete) |
+
+**Explored but not executed in this PoC:**
+| Feature | Where | Notes |
+|---------|-------|-------|
+| Async/Callback mode | `scripts/webhook_server.py` | Receiver implemented — requires public URL (ngrok) to trigger |
+| Cloud Storage delivery | `scraper/client.py` | `storage_type` param available — requires S3/GCS bucket setup |
 
 See [docs/FEATURES.md](docs/FEATURES.md) for detailed explanations of each feature.
 

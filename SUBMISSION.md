@@ -14,7 +14,7 @@ Built for **TechNovaAI** — a prospective client entering the U.S. smartphone r
 - **Phase 3:** `amazon_pricing` for top 5 ASINs (all seller offers — price intelligence)
 - Output: timestamped JSON with 100 products, 50+ fields each
 
-### Oxylabs Features Demonstrated (15)
+### Oxylabs Features Executed (13)
 | # | Feature | Where |
 |---|---------|-------|
 | 1 | `amazon` source (URL) | `scraper/search.py` |
@@ -24,14 +24,14 @@ Built for **TechNovaAI** — a prospective client entering the U.S. smartphone r
 | 5 | `geo_location` (ZIP code) | All modules |
 | 6 | URL-based category + brand filtering | `scraper/search.py` |
 | 7 | Async/Polling mode | `scraper/product.py` |
-| 8 | Async/Callback mode | `scripts/webhook_server.py` |
-| 9 | Batch submission | `scraper/product.py` |
-| 10 | Realtime endpoint | `scraper/client.py` |
-| 11 | Async endpoint | `scraper/client.py` |
-| 12 | Async results retrieval | `scraper/client.py` |
-| 13 | `autoselect_variant` context | `scraper/product.py` |
-| 14 | Oxylabs Scheduler API | `scripts/test_scheduler.py` |
-| 15 | Cloud Storage delivery | `scraper/client.py` |
+| 8 | Batch submission | `scraper/product.py` |
+| 9 | Realtime endpoint | `scraper/client.py` |
+| 10 | Async endpoint | `scraper/client.py` |
+| 11 | Async results retrieval | `scraper/client.py` |
+| 12 | `autoselect_variant` context | `scraper/product.py` |
+| 13 | Oxylabs Scheduler API | `scripts/test_scheduler.py` |
+
+**Explored but not executed:** Async/Callback (needs public URL), Cloud Storage delivery (needs S3/GCS bucket)
 
 ### Scripts (Demo/Testing)
 - `scripts/compare_sources.py` — Side-by-side comparison of `amazon_search` vs `amazon` (URL) source, showing why URL-based filtering eliminates waste

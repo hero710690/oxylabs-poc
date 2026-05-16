@@ -213,14 +213,14 @@ We tested both available approaches and built a comparison script (`scripts/comp
 | 5 | `geo_location` | US market data (ZIP code targeting) |
 | 6 | URL-based filtering | Category + brand filter, zero wasted requests |
 | 7 | Async/Polling | Non-blocking batch processing |
-| 8 | Async/Callback | Webhook-based delivery (production alternative) |
-| 9 | Batch submission | 10 products per batch, 10 batches total |
-| 10 | Realtime endpoint | Instant results for search + pricing |
-| 11 | Async endpoint | Background job submission |
-| 12 | `autoselect_variant` | Accurate pricing for iPhone variants |
-| 13 | Async results retrieval | Separate endpoint for completed jobs |
+| 8 | Batch submission | 10 products per batch, 10 batches total |
+| 9 | Realtime endpoint | Instant results for search + pricing |
+| 10 | Async endpoint | Background job submission |
+| 11 | `autoselect_variant` | Accurate pricing for iPhone variants |
+| 12 | Async results retrieval | Separate endpoint for completed jobs |
+| 13 | Oxylabs Scheduler | Tested: create → verify → pause → delete |
 
-**Total: 13 distinct Oxylabs features demonstrated in one PoC**
+**13 features executed. Additionally explored (not executed): Async/Callback, Cloud Storage delivery.**
 
 ---
 
@@ -409,7 +409,7 @@ If TechNovaAI's team is new to web scraping, Oxylabs' built-in [OxyCopilot](http
 
 **What we delivered:**
 - Fully working scraper: 100 iPhones, 50+ fields each, hourly refresh
-- 15 Oxylabs features demonstrated
+- 13 Oxylabs features executed + 2 explored (Callback, Cloud Storage)
 - Source comparison proving URL-based filtering saves money vs `amazon_search`
 - Hourly cron job running with real data — detected $170 price drop in one hour
 - Competitive pricing intelligence (multi-seller analysis)

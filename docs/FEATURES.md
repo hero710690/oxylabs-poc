@@ -13,14 +13,18 @@ This document maps every Oxylabs feature used in this PoC to its location in the
 | 5 | `geo_location` | All scraper modules | All payloads | Locks results to US market (ZIP code: 90210) |
 | 6 | URL-based filtering | `scraper/search.py` | `search_iphones()` | Category + brand filter via Amazon URL params (zero waste) |
 | 7 | Async/Polling mode | `scraper/product.py` | `_poll_until_done()` | Non-blocking batch product scraping |
-| 8 | Async/Callback mode | `scripts/webhook_server.py` | `receive_oxylabs_callback()` | Webhook-based delivery notification receiver |
-| 9 | Batch submission | `scraper/product.py` | `scrape_products()` | Processes 100 products in chunks of 10 |
-| 10 | Realtime endpoint | `scraper/client.py` | `realtime()` | Synchronous search + pricing requests |
-| 11 | Async endpoint | `scraper/client.py` | `async_submit()` | Background job submission |
-| 12 | Async results retrieval | `scraper/client.py` | `async_get_results()` | Fetch completed job results |
-| 13 | `context: autoselect_variant` | `scraper/product.py` | `_process_batch()` | Accurate buybox pricing for variant products |
-| 14 | Oxylabs Scheduler | `scripts/test_scheduler.py` | `client.create_schedule()` | Recurring jobs on cron schedule (tested: create → verify → pause → delete) |
-| 15 | Cloud Storage delivery | `scraper/client.py` | `create_schedule()` | Results pushed directly to client's S3/GCS via storage_type param |
+| 8 | Batch submission | `scraper/product.py` | `scrape_products()` | Processes 100 products in chunks of 10 |
+| 9 | Realtime endpoint | `scraper/client.py` | `realtime()` | Synchronous search + pricing requests |
+| 10 | Async endpoint | `scraper/client.py` | `async_submit()` | Background job submission |
+| 11 | Async results retrieval | `scraper/client.py` | `async_get_results()` | Fetch completed job results |
+| 12 | `context: autoselect_variant` | `scraper/product.py` | `_process_batch()` | Accurate buybox pricing for variant products |
+| 13 | Oxylabs Scheduler | `scripts/test_scheduler.py` | `client.create_schedule()` | Recurring jobs on cron schedule (tested: create → verify → pause → delete) |
+
+**Explored but not executed in this PoC:**
+| Feature | File | Notes |
+|---------|------|-------|
+| Async/Callback mode | `scripts/webhook_server.py` | Receiver implemented — requires public URL (ngrok) to trigger live |
+| Cloud Storage delivery | `scraper/client.py` | `storage_type` param supported — requires S3/GCS bucket setup |
 
 ## Feature Details
 
