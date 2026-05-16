@@ -18,13 +18,7 @@ This document maps every Oxylabs feature used in this PoC to its location in the
 | 10 | Async endpoint | `scraper/client.py` | `async_submit()` | Background job submission |
 | 11 | Async results retrieval | `scraper/client.py` | `async_get_results()` | Fetch completed job results |
 | 12 | `context: autoselect_variant` | `scraper/product.py` | `_process_batch()` | Accurate buybox pricing for variant products |
-| 13 | Oxylabs Scheduler | `scripts/test_scheduler.py` | `client.create_schedule()` | Recurring jobs on cron schedule (tested: create → verify → pause → delete) |
-
-**Explored but not executed in this PoC:**
-| Feature | File | Notes |
-|---------|------|-------|
-| Async/Callback mode | `scripts/webhook_server.py` | Receiver implemented — requires public URL (ngrok) to trigger live |
-| Cloud Storage delivery | `scraper/client.py` | `storage_type` param supported — requires S3/GCS bucket setup |
+| 13 | Oxylabs Scheduler | `scripts/test_scheduler.py` | `client.create_schedule()` | Recurring jobs on cron schedule — tested: create → verify → pause → delete |
 
 ## Feature Details
 
@@ -62,26 +56,21 @@ for relevant results. We paginate across 5-7 pages to collect 100+ listings.
 For 100 product pages, synchronous requests would be too slow. Async mode lets us
 submit all jobs quickly, then poll for completion. Jobs run in parallel on Oxylabs' side.
 
-### 8. Async/Callback (Alternative)
-For production, a callback URL eliminates polling overhead entirely. Oxylabs POSTs
-a notification to your endpoint when each job completes. See `scripts/webhook_server.py`
-for the FastAPI receiver implementation.
-
-### 9. Batch Processing
+### 8. Batch Processing
 We chunk 100 products into groups of 10. This balances throughput with manageability —
 we can track progress, handle failures per-batch, and avoid overwhelming the API.
 
-### 10-12. Endpoint Architecture
+### 9-11. Endpoint Architecture
 - **Realtime** (`realtime.oxylabs.io`) — synchronous, used for search and pricing
 - **Async submit** (`data.oxylabs.io`) — submit background jobs
 - **Async results** (`data.oxylabs.io/{id}/results`) — retrieve completed results
 
-### 13. autoselect_variant (Context Parameter)
+### 12. autoselect_variant (Context Parameter)
 iPhones come in many storage/color variants. Without `autoselect_variant: true`,
 the API might return pricing for a different variant than the one shown. This parameter
 appends `th=1&psc=1` to get accurate buybox/pricing data for the primary variant.
 
-### 14. Oxylabs Scheduler
+### 13. Oxylabs Scheduler
 Oxylabs runs scraping jobs on a recurring cron schedule — no scheduling
 infrastructure needed on the client side. Tested in `scripts/test_scheduler.py`
 (create → verify → pause → delete — all confirmed working).
@@ -93,24 +82,17 @@ infrastructure needed on the client side. Tested in `scripts/test_scheduler.py`
 {
   "cron": "0 * * * *",
   "end_time": "2027-01-01 00:00:00",
-  "callback_url": "https://your-server.com/webhooks/oxylabs",
   "items": [
     {
       "source": "amazon_search",
       "query": "iPhone",
       "domain": "com",
       "parse": true,
-      "geo_location": "90210",
-      "storage_type": "s3",
-      "storage_url": "my-bucket/oxylabs-results"
+      "geo_location": "90210"
     }
   ]
 }
 ```
-
-**Result delivery options:**
-- `callback_url` — notification only (job done ping + link to fetch results)
-- `storage_type` + `storage_url` — full results pushed directly to client's bucket
 
 Additional Scheduler endpoints:
 - `GET /v1/schedules/{id}` — check schedule info
@@ -118,22 +100,7 @@ Additional Scheduler endpoints:
 
 See: https://developers.oxylabs.io/products/web-scraper-api/features/scheduler
 
-### 15. Cloud Storage Delivery
-Results can be pushed directly to the client's cloud storage bucket — no polling,
-no webhook server, no infrastructure needed beyond the bucket itself.
-
-**Supported providers:**
-| Provider | `storage_type` | `storage_url` format |
-|----------|---------------|---------------------|
-| Amazon S3 | `s3` | `bucket-name/path` |
-| Google Cloud Storage | `gcs` | `bucket-name/path` |
-| S3-compatible (Alibaba OSS, etc.) | `s3_compatible` | `https://KEY:SECRET@endpoint/bucket/path` |
-
-**Setup:** Grant Oxylabs' service account write access to your bucket (one-time).
-Then every scheduled job drops `{job_id}.json` into your bucket automatically.
-
-This is the recommended production approach for TechNovaAI — results land in S3
-every hour with zero client-side infrastructure.
+**Note on delivery options (not tested in this PoC):** The Scheduler API also supports `callback_url` (webhook notification when job completes) and `storage_type`/`storage_url` (push results directly to S3/GCS). These are production delivery options — for TechNovaAI, the S3 approach would mean zero client-side infrastructure. Not exercised here since the PoC uses system crontab with local file output.
 
 ---
 
@@ -145,8 +112,6 @@ Beyond the sources used in this PoC, Oxylabs Web Scraper API offers additional A
 |--------|---------|------------------------|
 | `amazon_sellers` | Scrape a specific seller's storefront | Monitor competitor sellers entering the iPhone resale space |
 | `amazon_bestsellers` | Bestseller rankings by category | Track which iPhones are trending in real-time |
-| `amazon_reviews` | Product reviews for an ASIN | Sentiment analysis on competing listings |
-| `amazon_questions` | Q&A section for a product | Identify common buyer concerns to address in listings |
 
 These sources follow the same patterns as our current implementation (same auth, `parse: true`, `geo_location`, async/realtime modes) and could be integrated with minimal code changes.
 

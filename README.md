@@ -32,13 +32,7 @@ Scheduler triggers hourly run
 | 10 | Async endpoint | `scraper/client.py` | Background job submission + results retrieval |
 | 11 | `context: autoselect_variant` | `scraper/product.py` | Accurate buybox pricing for variant products |
 | 12 | Async results retrieval | `scraper/client.py` | Fetch completed job results from separate endpoint |
-| 13 | Oxylabs Scheduler | `scripts/test_scheduler.py` | Recurring jobs on cron schedule (tested: create → pause → delete) |
-
-**Explored but not executed in this PoC:**
-| Feature | Where | Notes |
-|---------|-------|-------|
-| Async/Callback mode | `scripts/webhook_server.py` | Receiver implemented — requires public URL (ngrok) to trigger |
-| Cloud Storage delivery | `scraper/client.py` | `storage_type` param available — requires S3/GCS bucket setup |
+| 13 | Oxylabs Scheduler | `scripts/test_scheduler.py` | Recurring jobs on cron schedule — tested: create → verify → pause → delete |
 
 See [docs/FEATURES.md](docs/FEATURES.md) for detailed explanations of each feature.
 
