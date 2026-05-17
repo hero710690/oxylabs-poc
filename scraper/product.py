@@ -1,5 +1,6 @@
 import logging
 import time
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import Dict, List, Optional
 
 from scraper.client import OxylabsClient
@@ -82,21 +83,27 @@ def _process_batch(client: OxylabsClient, batch: List[SearchResult]) -> Dict[str
         except Exception as e:
             logger.warning(f"Failed to submit job for ASIN {item.asin}: {e}")
 
-    # Poll all jobs for completion
+    # Poll all jobs concurrently
+    def poll_job(job_info: dict):
+        result = _poll_until_done(
+            client,
+            job_info["job_id"],
+            timeout=config.POLL_TIMEOUT,
+            interval=config.POLL_INTERVAL,
+        )
+        return job_info["asin"], _parse_product_response(result)
+
     products: Dict[str, ProductData] = {}
-    for job_info in jobs:
-        try:
-            result = _poll_until_done(
-                client,
-                job_info["job_id"],
-                timeout=config.POLL_TIMEOUT,
-                interval=config.POLL_INTERVAL,
-            )
-            product = _parse_product_response(result)
-            if product:
-                products[job_info["asin"]] = product
-        except Exception as e:
-            logger.warning(f"Failed to get product data for ASIN {job_info['asin']}: {e}")
+    with ThreadPoolExecutor(max_workers=len(jobs)) as executor:
+        futures = {executor.submit(poll_job, j): j["asin"] for j in jobs}
+        for future in as_completed(futures):
+            asin = futures[future]
+            try:
+                asin, product = future.result()
+                if product:
+                    products[asin] = product
+            except Exception as e:
+                logger.warning(f"Failed to get product data for ASIN {asin}: {e}")
 
     return products
 

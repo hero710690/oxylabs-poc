@@ -1,4 +1,5 @@
 import logging
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from typing import List
 
 from scraper.client import OxylabsClient
@@ -17,31 +18,38 @@ def search_iphones(
     Phase 1: Search Amazon for iPhones using brand-filtered URL.
     Uses the `amazon` source with a pre-filtered URL (Cell Phones + Apple brand)
     to ensure only actual iPhone listings are returned — no accessories, no other brands.
+    All pages are fetched concurrently.
     """
     if client is None:
         client = OxylabsClient()
 
-    all_results: List[SearchResult] = []
-
-    for page_num in range(1, pages + 1):
-        if len(all_results) >= limit:
-            break
-
-        # FEATURE: amazon source with URL — scrape brand-filtered search results
-        # FEATURE: parse: true — auto-parsed JSON output
-        # FEATURE: geo_location — lock to US market
+    def fetch_page(page_num: int):
         payload = {
             "source": "amazon",
             "url": f"{config.SEARCH_URL}&page={page_num}",
             "parse": True,
             "geo_location": config.GEO_LOCATION,
         }
-
         logger.info(f"Searching page {page_num}/{pages}")
         response = client.realtime(payload)
+        return page_num, response["results"][0]
 
-        page_results = _parse_search_response(response["results"][0], len(all_results))
-        all_results.extend(page_results)
+    # Fetch all pages concurrently
+    page_results: dict[int, list] = {}
+    with ThreadPoolExecutor(max_workers=pages) as executor:
+        futures = {executor.submit(fetch_page, p): p for p in range(1, pages + 1)}
+        for future in as_completed(futures):
+            try:
+                page_num, result = future.result()
+                page_results[page_num] = result
+            except Exception as e:
+                logger.warning(f"Page {futures[future]} failed: {e}")
+
+    # Merge in page order to preserve position ordering
+    all_results: List[SearchResult] = []
+    for page_num in sorted(page_results):
+        offset = len(all_results)
+        all_results.extend(_parse_search_response(page_results[page_num], offset))
 
     logger.info(f"Search returned {len(all_results)} results, using top {limit}")
     return all_results[:limit]

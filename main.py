@@ -1,6 +1,7 @@
 import json
 import logging
 import os
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timezone
 from typing import Dict, List
 
@@ -47,16 +48,19 @@ def run_scrape_job() -> List[ScrapedProduct]:
     # Phase 3: Pricing for top 5 products (demo of amazon_pricing source)
     logger.info("Phase 3: Fetching seller pricing for top 5 listings...")
     top_asins = [r.asin for r in search_results[:5]]
-    for asin in top_asins:
-        try:
-            offers = get_pricing(asin, client=client)
-            for product in merged:
-                if product.asin == asin:
-                    product.pricing_offers = offers
-                    break
-            logger.info(f"  ASIN {asin}: {len(offers)} seller offers")
-        except Exception as e:
-            logger.warning(f"  ASIN {asin}: pricing failed - {e}")
+    merged_by_asin = {p.asin: p for p in merged}
+
+    with ThreadPoolExecutor(max_workers=len(top_asins)) as executor:
+        futures = {executor.submit(get_pricing, asin, client): asin for asin in top_asins}
+        for future in as_completed(futures):
+            asin = futures[future]
+            try:
+                offers = future.result()
+                if asin in merged_by_asin:
+                    merged_by_asin[asin].pricing_offers = offers
+                logger.info(f"  ASIN {asin}: {len(offers)} seller offers")
+            except Exception as e:
+                logger.warning(f"  ASIN {asin}: pricing failed - {e}")
 
     return merged
 
