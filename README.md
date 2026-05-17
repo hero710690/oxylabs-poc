@@ -92,10 +92,12 @@ oxylabs-poc/
 ├── main.py                    # Entry point (single run, cron handles scheduling)
 ├── config.py                  # Credentials, constants
 ├── models.py                  # Pydantic validation schemas
+├── requirements.txt           # Python dependencies
 ├── Dockerfile                 # Container image
 ├── docker-compose.yml         # Docker run config
+├── SUBMISSION.md              # Assignment summary and key design decisions
 ├── scraper/
-│   ├── client.py              # Oxylabs API wrapper (retry, async, scheduler)
+│   ├── client.py              # Oxylabs API wrapper (retry, async, realtime)
 │   ├── search.py              # Phase 1: brand-filtered search (Apple iPhones only)
 │   ├── product.py             # Phase 2: batch async product pages
 │   └── pricing.py             # Phase 3: multi-seller pricing
@@ -107,9 +109,9 @@ oxylabs-poc/
 ├── output/                    # Timestamped JSON outputs + HTML report
 ├── tests/                     # Unit tests (18 tests)
 └── docs/
-    ├── FEATURES.md            # Feature → code mapping (15 features)
+    ├── FEATURES.md            # Feature → code mapping (13 features)
     ├── PRICING.md             # Cost breakdown (~$49/month on Micro plan)
-    ├── FEEDBACK.md            # API developer experience feedback
+    └── FEEDBACK.md            # API developer experience feedback
 ```
 
 ## Output Example
@@ -174,7 +176,7 @@ pytest tests/ -v
 
 ## Documentation
 
-- [FEATURES.md](docs/FEATURES.md) — Detailed feature usage guide (15 features + additional sources)
+- [FEATURES.md](docs/FEATURES.md) — Detailed feature usage guide (13 features)
 - [PRICING.md](docs/PRICING.md) — Cost calculation (~$49/month Micro plan) and plan recommendation
 - [FEEDBACK.md](docs/FEEDBACK.md) — Developer experience feedback for Oxylabs
 - Presentation slides — attached separately as PDF
