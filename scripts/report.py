@@ -80,12 +80,16 @@ def generate_report(data: dict) -> str:
         if p.get("pricing_offers"):
             offers_str = f'<span class="badge badge-offers">{len(p["pricing_offers"])} offers</span>'
 
+        no_specs = not p.get("specifications")
+        row_style = ' style="opacity:0.55"' if no_specs else ''
+        no_specs_badge = ' <span class="badge" style="background:#fee2e2;color:#991b1b">search only</span>' if no_specs else ''
+
         product_rows += f"""
-        <tr>
+        <tr{row_style}>
             <td>{p['position']}</td>
             <td class="product-title">
                 <a href="{p.get('url', '#')}" target="_blank">{p['title'][:60]}{'...' if len(p.get('title', '')) > 60 else ''}</a>
-                <div class="badges">{badges_str} {offers_str}</div>
+                <div class="badges">{badges_str} {offers_str}{no_specs_badge}</div>
             </td>
             <td class="price">{price_str}</td>
             <td>{rating_str}</td>
@@ -124,6 +128,33 @@ def generate_report(data: dict) -> str:
                     </tr>
                 </thead>
                 <tbody>{pricing_rows}</tbody>
+            </table>
+        </div>"""
+
+    # Build no-specs section (product page fetch failed — search-level data only)
+    no_specs_section = ""
+    no_specs_products = [p for p in products if not p.get("specifications")]
+    if no_specs_products:
+        no_specs_rows = ""
+        for p in no_specs_products:
+            price_str = f"${p['price']:.2f}" if p.get("price") and p["price"] > 0 else "N/A"
+            no_specs_rows += f"""
+            <tr>
+                <td>{p['position']}</td>
+                <td><a href="{p.get('url', '#')}" target="_blank">{p['title'][:70]}{'...' if len(p.get('title','')) > 70 else ''}</a></td>
+                <td class="price">{price_str}</td>
+                <td>{p['asin']}</td>
+            </tr>"""
+
+        no_specs_section = f"""
+        <div class="section">
+            <h2>Search-Level Data Only — No Full Specs ({len(no_specs_products)} products)</h2>
+            <p style="color: #666; font-size: 0.85rem; margin-bottom: 1rem;">Product page fetch failed or returned incomplete data for these listings. Includes position, price, and ratings from search — but no specifications or delivery info.</p>
+            <table>
+                <thead>
+                    <tr><th>#</th><th>Product</th><th>Price</th><th>ASIN</th></tr>
+                </thead>
+                <tbody>{no_specs_rows}</tbody>
             </table>
         </div>"""
 
@@ -252,6 +283,8 @@ def generate_report(data: dict) -> str:
         </div>
 
         {pricing_section}
+
+        {no_specs_section}
 
         {no_rating_section}
 
