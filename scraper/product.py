@@ -97,7 +97,11 @@ def _poll_all_jobs(client: OxylabsClient, jobs: list) -> Dict[str, ProductData]:
             timeout=config.POLL_TIMEOUT,
             interval=config.POLL_INTERVAL,
         )
-        return job_info["asin"], _parse_product_response(result)
+        asin = job_info["asin"]
+        product = _parse_product_response(result, asin)
+        if product and not product.specifications:
+            logger.warning(f"ASIN {asin}: parsed OK but no product_details in response")
+        return asin, product
 
     products: Dict[str, ProductData] = {}
     if not jobs:
@@ -111,6 +115,8 @@ def _poll_all_jobs(client: OxylabsClient, jobs: list) -> Dict[str, ProductData]:
                 asin, product = future.result()
                 if product:
                     products[asin] = product
+                else:
+                    logger.warning(f"ASIN {asin}: _parse_product_response returned None")
             except Exception as e:
                 logger.warning(f"Failed to get product data for ASIN {asin}: {e}", exc_info=True)
 
@@ -143,13 +149,13 @@ def _poll_until_done(
         time.sleep(interval)
 
 
-def _parse_product_response(response: dict) -> Optional[ProductData]:
+def _parse_product_response(response: dict, asin: str = "") -> Optional[ProductData]:
     """Parse Oxylabs product response into ProductData model."""
     try:
         content = response["results"][0]["content"]
 
         if not isinstance(content, dict):
-            logger.warning(f"Unexpected content type: {type(content)}, skipping")
+            logger.warning(f"ASIN {asin}: unexpected content type {type(content).__name__}, raw: {str(content)[:300]}")
             return None
 
         # Extract delivery info as a readable string
