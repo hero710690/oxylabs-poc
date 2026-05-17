@@ -24,15 +24,19 @@ def scrape_products(
     if client is None:
         client = OxylabsClient()
 
-    # FEATURE: Batch submission — submit jobs in chunks to avoid overwhelming the API,
-    # then poll all submitted jobs concurrently
+    # FEATURE: Batch submission — submit all jobs concurrently, then poll all concurrently
+    batches = [search_results[i:i + batch_size] for i in range(0, len(search_results), batch_size)]
+    total_batches = len(batches)
+    logger.info(f"Submitting {len(search_results)} jobs across {total_batches} batches concurrently...")
+
     jobs = []
-    total_batches = (len(search_results) + batch_size - 1) // batch_size
-    for i in range(0, len(search_results), batch_size):
-        batch = search_results[i : i + batch_size]
-        batch_num = (i // batch_size) + 1
-        logger.info(f"Submitting batch {batch_num}/{total_batches} ({len(batch)} jobs)")
-        jobs.extend(_submit_jobs(client, batch))
+    with ThreadPoolExecutor(max_workers=total_batches) as executor:
+        futures = {executor.submit(_submit_jobs, client, batch): idx for idx, batch in enumerate(batches)}
+        for future in as_completed(futures):
+            try:
+                jobs.extend(future.result())
+            except Exception as e:
+                logger.warning(f"Batch submission failed: {e}")
 
     logger.info(f"All {len(jobs)} jobs submitted, polling concurrently...")
     all_products = _poll_all_jobs(client, jobs)
