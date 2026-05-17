@@ -58,8 +58,23 @@ def search_iphones(
         offset = len(all_results)
         all_results.extend(_parse_search_response(page_results[page_num], offset))
 
-    logger.info(f"Search returned {len(all_results)} results, using top {limit}")
-    return all_results[:limit]
+    # Deduplicate by ASIN, keeping first occurrence (lowest position)
+    seen = set()
+    deduped = []
+    for r in all_results:
+        if r.asin not in seen:
+            seen.add(r.asin)
+            deduped.append(r)
+
+    if len(deduped) < len(all_results):
+        logger.info(f"Removed {len(all_results) - len(deduped)} duplicate ASINs across pages")
+
+    # Re-assign sequential positions after dedup
+    for idx, r in enumerate(deduped, start=1):
+        r.position = idx
+
+    logger.info(f"Search returned {len(deduped)} unique results, using top {limit}")
+    return deduped[:limit]
 
 
 def _parse_search_response(page_result: dict, offset: int) -> List[SearchResult]:
