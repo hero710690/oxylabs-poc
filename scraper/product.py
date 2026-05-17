@@ -17,23 +17,25 @@ def scrape_products(
 ) -> Dict[str, ProductData]:
     """
     Phase 2: Scrape individual product pages using async/polling mode.
-    Submits requests in batches, polls for completion.
+    Submits all jobs upfront, then polls all concurrently.
+    batch_size controls how many jobs are submitted at once to avoid overwhelming the API.
     Returns dict keyed by ASIN for easy merging with search results.
     """
     if client is None:
         client = OxylabsClient()
 
-    all_products: Dict[str, ProductData] = {}
-
-    # FEATURE: Batch submission — process products in chunks
+    # FEATURE: Batch submission — submit jobs in chunks to avoid overwhelming the API,
+    # then poll all submitted jobs concurrently
+    jobs = []
+    total_batches = (len(search_results) + batch_size - 1) // batch_size
     for i in range(0, len(search_results), batch_size):
         batch = search_results[i : i + batch_size]
         batch_num = (i // batch_size) + 1
-        total_batches = (len(search_results) + batch_size - 1) // batch_size
-        logger.info(f"Processing batch {batch_num}/{total_batches} ({len(batch)} products)")
+        logger.info(f"Submitting batch {batch_num}/{total_batches} ({len(batch)} jobs)")
+        jobs.extend(_submit_jobs(client, batch))
 
-        batch_products = _process_batch(client, batch)
-        all_products.update(batch_products)
+    logger.info(f"All {len(jobs)} jobs submitted, polling concurrently...")
+    all_products = _poll_all_jobs(client, jobs)
 
     # Retry failed products (up to 2 attempts)
     failed = [r for r in search_results if r.asin not in all_products]
@@ -41,7 +43,8 @@ def scrape_products(
     while failed and retries < 2:
         retries += 1
         logger.info(f"Retrying {len(failed)} failed products (attempt {retries}/2)")
-        retry_products = _process_batch(client, failed)
+        retry_jobs = _submit_jobs(client, failed)
+        retry_products = _poll_all_jobs(client, retry_jobs)
         all_products.update(retry_products)
         failed = [r for r in failed if r.asin not in all_products]
 
@@ -56,11 +59,10 @@ def scrape_products(
     return all_products
 
 
-def _process_batch(client: OxylabsClient, batch: List[SearchResult]) -> Dict[str, ProductData]:
-    """Submit a batch of product requests and poll for results."""
+def _submit_jobs(client: OxylabsClient, items: List[SearchResult]) -> list:
+    """Submit async jobs for a list of search results. Returns list of {job_id, asin}."""
     jobs = []
-
-    for item in batch:
+    for item in items:
         # FEATURE: amazon_product source — individual product page data
         # FEATURE: parse: true — structured auto-parsed output
         # FEATURE: geo_location — US market
@@ -72,18 +74,18 @@ def _process_batch(client: OxylabsClient, batch: List[SearchResult]) -> Dict[str
             "domain": config.SEARCH_DOMAIN,
             "parse": True,
             "geo_location": config.GEO_LOCATION,
-            "context": [
-                {"key": "autoselect_variant", "value": True},
-            ],
+            "context": [{"key": "autoselect_variant", "value": True}],
         }
-
         try:
             job = client.async_submit(payload)
             jobs.append({"job_id": job["id"], "asin": item.asin})
         except Exception as e:
             logger.warning(f"Failed to submit job for ASIN {item.asin}: {e}")
+    return jobs
 
-    # Poll all jobs concurrently
+
+def _poll_all_jobs(client: OxylabsClient, jobs: list) -> Dict[str, ProductData]:
+    """Poll all jobs concurrently and return results keyed by ASIN."""
     def poll_job(job_info: dict):
         result = _poll_until_done(
             client,
@@ -94,6 +96,9 @@ def _process_batch(client: OxylabsClient, batch: List[SearchResult]) -> Dict[str
         return job_info["asin"], _parse_product_response(result)
 
     products: Dict[str, ProductData] = {}
+    if not jobs:
+        return products
+
     with ThreadPoolExecutor(max_workers=len(jobs)) as executor:
         futures = {executor.submit(poll_job, j): j["asin"] for j in jobs}
         for future in as_completed(futures):
