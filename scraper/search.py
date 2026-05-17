@@ -60,6 +60,10 @@ def _parse_search_response(page_result: dict, offset: int) -> List[SearchResult]
     results = []
     content = page_result["content"]["results"]
 
+    if not isinstance(content, dict):
+        logger.warning(f"Unexpected search results type: {type(content)}, skipping page")
+        return results
+
     # Combine organic and sponsored, sort by actual page position
     organic = content.get("organic", [])
     paid = content.get("paid", [])
