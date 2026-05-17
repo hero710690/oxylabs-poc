@@ -10,7 +10,7 @@ Built for **TechNovaAI** — a prospective client entering the U.S. smartphone r
 
 ### Core Pipeline (`main.py`)
 - **Phase 1:** Brand-filtered search using `amazon` source with URL params (Apple iPhones only, zero wasted requests)
-- **Phase 2:** Async batch `amazon_product` scraping (100 products in 10 batches, polled for completion)
+- **Phase 2:** Async batch `amazon_product` scraping (100 products submitted concurrently, all jobs polled in parallel)
 - **Phase 3:** `amazon_pricing` for top 5 ASINs (all seller offers — price intelligence)
 - Output: timestamped JSON with 100 products, 50+ fields each
 
@@ -45,10 +45,10 @@ Built for **TechNovaAI** — a prospective client entering the U.S. smartphone r
 - Between two hourly runs: 11 price changes (including a **$170 drop**), 78 rank shifts, 13 listings rotated out
 
 ### Documentation
-- `docs/FEATURES.md` — 15 features mapped to code with explanations
+- `docs/FEATURES.md` — 13 features mapped to code with explanations
 - `docs/PRICING.md` — Cost breakdown (~$49/month on Micro plan)
 - `docs/FEEDBACK.md` — Developer experience feedback + feature request (Scheduler job chaining)
-- `docs/PRESENTATION.md` — Full 18-slide presentation
+- `docs/PRESENTATION.md` — Full 17-slide presentation (excluded from repo — will be shared as PDF)
 
 ### Testing
 - 18 unit tests covering all modules (`pytest tests/ -v`)
@@ -67,5 +67,5 @@ python main.py         # Run the full pipeline once
 
 1. **URL-based filtering over `amazon_search`** — Eliminates non-iPhone contamination at the source. Client pays only for relevant results.
 2. **System crontab over APScheduler** — Simpler, no extra dependency, battle-tested.
-3. **Async batching (10 per batch)** — Balances throughput with observability and error isolation.
+3. **Parallel submission and polling** — All 10 batches submitted concurrently, all 100 jobs polled simultaneously. Total runtime ~70 seconds (down from ~6 minutes sequential).
 4. **Oxylabs Scheduler explored but not used for main pipeline** — It can't chain jobs (Phase 2 needs ASINs from Phase 1). Documented as a feature request in FEEDBACK.md.
