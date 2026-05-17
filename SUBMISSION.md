@@ -48,7 +48,6 @@ Built for **TechNovaAI** — a prospective client entering the U.S. smartphone r
 - `docs/FEATURES.md` — 13 features mapped to code with explanations
 - `docs/PRICING.md` — Cost breakdown (~$49/month on Micro plan)
 - `docs/FEEDBACK.md` — Developer experience feedback + feature request (Scheduler job chaining)
-- `docs/PRESENTATION.md` — Full 17-slide presentation (excluded from repo — will be shared as PDF)
 
 ### Testing
 - 18 unit tests covering all modules (`pytest tests/ -v`)
