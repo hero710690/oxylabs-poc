@@ -68,5 +68,5 @@ python report.py       # Generate the report for latest output
 
 1. **URL-based filtering over `amazon_search`** — Eliminates non-iPhone contamination at the source. Client pays only for relevant results.
 2. **System crontab over APScheduler** — Simpler, no extra dependency, battle-tested.
-3. **Parallel submission and polling** — All 10 batches submitted concurrently, all 100 jobs polled simultaneously. Total runtime ~23 seconds (down from ~6 minutes sequential).
+3. **Parallel submission and polling** — All 10 batches submitted concurrently, all 100 jobs polled simultaneously. Total runtime ~70 seconds (down from ~6 minutes sequential).
 4. **Oxylabs Scheduler explored but not used for main pipeline** — It can't chain jobs (Phase 2 needs ASINs from Phase 1). Documented as a feature request in FEEDBACK.md.
