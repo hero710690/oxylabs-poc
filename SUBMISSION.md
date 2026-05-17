@@ -60,6 +60,8 @@ cd oxylabs-poc
 pip install -r requirements.txt
 cp .env.example .env   # Add your Oxylabs credentials
 python main.py         # Run the full pipeline once
+cd scripts
+python report.py       # Generate the report for latest output
 ```
 
 ## Key Design Decisions
