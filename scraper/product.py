@@ -112,7 +112,7 @@ def _poll_all_jobs(client: OxylabsClient, jobs: list) -> Dict[str, ProductData]:
                 if product:
                     products[asin] = product
             except Exception as e:
-                logger.warning(f"Failed to get product data for ASIN {asin}: {e}")
+                logger.warning(f"Failed to get product data for ASIN {asin}: {e}", exc_info=True)
 
     return products
 
@@ -161,7 +161,8 @@ def _parse_product_response(response: dict) -> Optional[ProductData]:
                 if not isinstance(d, dict):
                     continue
                 dtype = d.get("type", "")
-                date_by = d.get("date", {}).get("by", "")
+                date_val = d.get("date", {})
+                date_by = date_val.get("by", "") if isinstance(date_val, dict) else ""
                 parts.append(f"{dtype} {date_by}".strip())
             delivery_str = " | ".join(parts) if parts else None
 
