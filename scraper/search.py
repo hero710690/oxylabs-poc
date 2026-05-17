@@ -71,10 +71,10 @@ def _parse_search_response(page_result: dict, offset: int) -> List[SearchResult]
     all_items = [(item, False) for item in organic] + [(item, True) for item in paid]
     all_items.sort(key=lambda x: x[0].get("pos", 9999))
 
-    for item, is_paid in all_items:
+    for idx, (item, is_paid) in enumerate(all_items, start=1):
         results.append(
             SearchResult(
-                position=offset + item.get("pos", len(results) + 1),
+                position=offset + idx,
                 asin=item["asin"],
                 title=item.get("title", ""),
                 price=item.get("price"),
