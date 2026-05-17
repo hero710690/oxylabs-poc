@@ -31,8 +31,14 @@ def search_iphones(
             "geo_location": config.GEO_LOCATION,
         }
         logger.info(f"Searching page {page_num}/{pages}")
-        response = client.realtime(payload)
-        return page_num, response["results"][0]
+        for attempt in range(3):
+            response = client.realtime(payload)
+            result = response["results"][0]
+            content = result.get("content", {}).get("results", {})
+            if isinstance(content, dict) and content:
+                return page_num, result
+            logger.warning(f"Page {page_num} returned empty/malformed content (attempt {attempt + 1}/3), retrying...")
+        return page_num, result  # return last attempt regardless
 
     # Fetch all pages concurrently
     page_results = {}
