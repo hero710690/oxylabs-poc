@@ -72,30 +72,39 @@ def test_search_iphones_paginates():
 
 def test_search_iphones_limits_to_100():
     mock_client = MagicMock()
-    big_response = {
-        "results": [
-            {
-                "content": {
-                    "results": {
-                        "organic": [
-                            {
-                                "pos": i,
-                                "asin": f"B0TEST{i:03d}",
-                                "title": f"Apple iPhone {i}",
-                                "price": 300.0 + i,
-                                "currency": "USD",
-                                "url": f"/dp/B0TEST{i:03d}",
-                                "is_sponsored": False,
-                            }
-                            for i in range(1, 51)
-                        ],
-                        "paid": [],
+
+    def make_page_response(page_num):
+        offset = (page_num - 1) * 40
+        return {
+            "results": [
+                {
+                    "content": {
+                        "results": {
+                            "organic": [
+                                {
+                                    "pos": i,
+                                    "asin": f"B0TEST{offset + i:03d}",
+                                    "title": f"Apple iPhone {offset + i}",
+                                    "price": 300.0 + offset + i,
+                                    "currency": "USD",
+                                    "url": f"/dp/B0TEST{offset + i:03d}",
+                                    "is_sponsored": False,
+                                }
+                                for i in range(1, 41)
+                            ],
+                            "paid": [],
+                        }
                     }
                 }
-            }
-        ]
-    }
-    mock_client.realtime.return_value = big_response
+            ]
+        }
+
+    call_count = [0]
+    def side_effect(payload):
+        call_count[0] += 1
+        return make_page_response(call_count[0])
+
+    mock_client.realtime.side_effect = side_effect
 
     results = search_iphones(client=mock_client, pages=3, limit=100)
 
