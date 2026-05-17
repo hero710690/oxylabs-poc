@@ -158,6 +158,8 @@ def _parse_product_response(response: dict) -> Optional[ProductData]:
         if delivery_raw and isinstance(delivery_raw, list):
             parts = []
             for d in delivery_raw:
+                if not isinstance(d, dict):
+                    continue
                 dtype = d.get("type", "")
                 date_by = d.get("date", {}).get("by", "")
                 parts.append(f"{dtype} {date_by}".strip())
