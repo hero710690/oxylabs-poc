@@ -34,8 +34,9 @@ def search_iphones(
         for attempt in range(3):
             response = client.realtime(payload)
             result = response["results"][0]
-            content = result.get("content", {}).get("results", {})
-            if isinstance(content, dict) and content:
+            results_content = result.get("content", {}).get("results", None)
+            # Valid response: results is a non-empty dict with organic/paid keys
+            if isinstance(results_content, dict) and results_content:
                 return page_num, result
             logger.warning(f"Page {page_num} returned empty/malformed content (attempt {attempt + 1}/3), retrying...")
         return page_num, result  # return last attempt regardless
@@ -66,8 +67,13 @@ def _parse_search_response(page_result: dict, offset: int) -> List[SearchResult]
     results = []
     content = page_result["content"]["results"]
 
-    if not isinstance(content, dict):
-        logger.warning(f"Unexpected search results type: {type(content)}, raw content: {str(content)[:200]}")
+    # Oxylabs occasionally returns results as an empty list instead of a dict
+    if isinstance(content, list):
+        if not content:
+            logger.warning(f"Page returned empty results list, skipping")
+            return results
+        # Non-empty list — unexpected, log and skip
+        logger.warning(f"Unexpected non-empty list for results, skipping: {str(content)[:200]}")
         return results
 
     # Combine organic and sponsored, sort by actual page position
