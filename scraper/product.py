@@ -144,6 +144,10 @@ def _parse_product_response(response: dict) -> Optional[ProductData]:
     try:
         content = response["results"][0]["content"]
 
+        if not isinstance(content, dict):
+            logger.warning(f"Unexpected content type: {type(content)}, skipping")
+            return None
+
         # Extract delivery info as a readable string
         delivery_raw = content.get("delivery", [])
         delivery_str = None
