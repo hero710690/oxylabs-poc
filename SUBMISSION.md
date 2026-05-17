@@ -1,20 +1,17 @@
 # Submission Overview
 
-## What This Is
+## What I Built
 
-A fully working proof-of-concept that scrapes the top 100 iPhone listings on Amazon US using Oxylabs Web Scraper API. It extracts detailed product data from each listing's product page, fetches multi-seller pricing intelligence for the top 5 products, and runs hourly via system crontab.
+A fully working proof-of-concept that scrapes the top 100 iPhone listings on Amazon US using Oxylabs Web Scraper API, extracts detailed product data from each listing's product page, fetches multi-seller pricing intelligence for the top 5 products, and runs hourly via system crontab.
 
 Built for **TechNovaAI** — a prospective client entering the U.S. smartphone resale market who needs competitive intelligence on pricing, availability, and delivery.
 
-## What's Included
+See [README.md](README.md) for setup instructions, project structure, and how to run it.
 
-### Core Pipeline (`main.py`)
-- **Phase 1:** Brand-filtered search using `amazon` source with URL params (Apple iPhones only, zero wasted requests)
-- **Phase 2:** Async batch `amazon_product` scraping (100 products submitted concurrently, all jobs polled in parallel)
-- **Phase 3:** `amazon_pricing` for top 5 ASINs (all seller offers — price intelligence)
-- Output: timestamped JSON with 100 products, 50+ fields each
+---
 
-### Oxylabs Features Executed (13)
+## Oxylabs Features Executed (13)
+
 | # | Feature | Where |
 |---|---------|-------|
 | 1 | `amazon` source (URL) | `scraper/search.py` |
@@ -33,40 +30,46 @@ Built for **TechNovaAI** — a prospective client entering the U.S. smartphone r
 
 **Explored but not executed:** Async/Callback (needs public URL), Cloud Storage delivery (needs S3/GCS bucket)
 
-### Scripts (Demo/Testing)
-- `scripts/compare_sources.py` — Side-by-side comparison of `amazon_search` vs `amazon` (URL) source, showing why URL-based filtering eliminates waste
-- `scripts/test_scheduler.py` — Full Oxylabs Scheduler API test (create → verify → pause → delete)
-- `scripts/webhook_server.py` — FastAPI callback notification receiver
-- `scripts/report.py` — HTML dashboard generator from output JSON
+See [docs/FEATURES.md](docs/FEATURES.md) for detailed explanations of each feature.
 
-### Scheduling (Proven)
-- System crontab runs `python main.py` every hour
-- Cron log (`output/cron.log`) shows consecutive successful runs
-- Between two hourly runs: 11 price changes (including a **$170 drop**), 78 rank shifts, 13 listings rotated out
-
-### Documentation
-- `docs/FEATURES.md` — 13 features mapped to code with explanations
-- `docs/PRICING.md` — Cost breakdown (~$49/month on Micro plan)
-- `docs/FEEDBACK.md` — Developer experience feedback + feature request (Scheduler job chaining)
-
-### Testing
-- 18 unit tests covering all modules (`pytest tests/ -v`)
-
-## Quick Start
-
-```bash
-git clone https://github.com/hero710690/oxylabs-poc.git
-cd oxylabs-poc
-pip install -r requirements.txt
-cp .env.example .env   # Add your Oxylabs credentials
-python main.py         # Run the full pipeline once
-cd scripts
-python report.py       # Generate the report for latest output
-```
+---
 
 ## Key Design Decisions
 
-1. **URL-based filtering over `amazon_search`** — Eliminates non-iPhone contamination at the source. Client pays only for relevant results.
-2. **System crontab over APScheduler** — Simpler, no extra dependency, battle-tested.
-3. **Parallel submission and polling** — All 10 batches submitted concurrently, all 100 jobs polled simultaneously. Total runtime ~70 seconds (down from ~6 minutes sequential).
-4. **Oxylabs Scheduler explored but not used for main pipeline** — It can't chain jobs (Phase 2 needs ASINs from Phase 1). Documented as a feature request in FEEDBACK.md.
+1. **URL-based filtering over `amazon_search`** — Eliminates non-iPhone contamination at the source. The client pays only for relevant results. See [docs/FEATURES.md](docs/FEATURES.md) for the side-by-side comparison.
+
+2. **System crontab over APScheduler** — Simpler, no extra dependency, battle-tested. The Oxylabs Scheduler was explored but can't chain jobs (Phase 2 needs ASINs from Phase 1) — documented as a feature request in [docs/FEEDBACK.md](docs/FEEDBACK.md).
+
+3. **Parallel submission and polling** — All 10 batches submitted concurrently, all 100 jobs polled simultaneously. Total runtime ~23 seconds (down from ~6 minutes sequential).
+
+4. **Async/Polling for product pages, Realtime for search + pricing** — Product pages take 5–20 seconds each; async mode lets all 100 run in parallel. Search and pricing are fast enough for realtime.
+
+---
+
+## Scheduling — Proven with Real Data
+
+System crontab runs `python main.py` every hour. The `output/cron.log` shows consecutive successful runs:
+
+- Run 1: `2026-05-15T11:01:54` → 100 products, 100 with full detail
+- Run 2: `2026-05-15T12:05:34` → 100 products, 100 with full detail
+
+**What changed in one hour:** 11 price changes (including a $170 drop), 78 rank shifts, 13 listings rotated out.
+
+---
+
+## Testing
+
+18 unit tests covering all modules:
+
+```bash
+pytest tests/ -v
+```
+
+---
+
+## Documentation
+
+- [docs/FEATURES.md](docs/FEATURES.md) — 13 features mapped to code with explanations
+- [docs/PRICING.md](docs/PRICING.md) — Cost breakdown (~$49/month on Micro plan)
+- [docs/FEEDBACK.md](docs/FEEDBACK.md) — Developer experience feedback + feature request
+- Presentation — attached separately as PDF
