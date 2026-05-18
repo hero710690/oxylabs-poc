@@ -10,7 +10,7 @@ See [README.md](README.md) for setup instructions, project structure, and how to
 
 ---
 
-## Oxylabs Features Executed (12)
+## Oxylabs Features Executed (10)
 
 | # | Feature | Where |
 |---|---------|-------|
@@ -20,12 +20,10 @@ See [README.md](README.md) for setup instructions, project structure, and how to
 | 4 | `parse: true` | All modules |
 | 5 | `geo_location` (ZIP code) | All modules |
 | 6 | URL-based category + brand filtering | `scraper/search.py` |
-| 7 | Async/Polling mode | `scraper/product.py` |
+| 7 | Async/Polling mode | `scraper/product.py`, `scraper/client.py` |
 | 8 | Realtime endpoint | `scraper/client.py` |
-| 9 | Async endpoint | `scraper/client.py` |
-| 10 | Async results retrieval | `scraper/client.py` |
-| 11 | `autoselect_variant` context | `scraper/product.py` |
-| 12 | Oxylabs Scheduler API | `scripts/test_scheduler.py` |
+| 9 | `autoselect_variant` context | `scraper/product.py` |
+| 10 | Oxylabs Scheduler API | `scripts/test_scheduler.py` |
 
 **Explored but not executed:** Async/Callback (needs public URL), Cloud Storage delivery (needs S3/GCS bucket)
 
@@ -68,7 +66,7 @@ pytest tests/ -v
 
 ## Documentation
 
-- [docs/FEATURES.md](docs/FEATURES.md) — 12 features mapped to code with explanations
+- [docs/FEATURES.md](docs/FEATURES.md) — 10 features mapped to code with explanations
 - [docs/PRICING.md](docs/PRICING.md) — Cost breakdown (~$49/month on Micro plan)
 - [docs/FEEDBACK.md](docs/FEEDBACK.md) — Developer experience feedback + feature request
 - Presentation — attached separately as PDF

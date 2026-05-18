@@ -12,12 +12,10 @@ This document maps every Oxylabs feature used in this PoC to its location in the
 | 4 | `parse: true` | All scraper modules | All payloads | Structured auto-parsed JSON output (no HTML parsing) |
 | 5 | `geo_location` | All scraper modules | All payloads | Locks results to US market (ZIP code: 90210) |
 | 6 | URL-based filtering | `scraper/search.py` | `search_iphones()` | Category + brand filter via Amazon URL params (zero waste) |
-| 7 | Async/Polling mode | `scraper/product.py` | `_poll_until_done()` | Non-blocking product scraping — submit jobs, poll for completion |
+| 7 | Async/Polling mode | `scraper/product.py`, `scraper/client.py` | `async_submit()`, `async_poll()`, `async_get_results()` | Non-blocking product scraping — submit job, poll status, retrieve result |
 | 8 | Realtime endpoint | `scraper/client.py` | `realtime()` | Synchronous search + pricing requests |
-| 9 | Async endpoint | `scraper/client.py` | `async_submit()` | Background job submission |
-| 10 | Async results retrieval | `scraper/client.py` | `async_get_results()` | Fetch completed job results |
-| 11 | `context: autoselect_variant` | `scraper/product.py` | `_submit_jobs()` | Accurate buybox pricing for variant products |
-| 12 | Oxylabs Scheduler | `scripts/test_scheduler.py` | `client.create_schedule()` | Recurring jobs on cron schedule — tested: create → verify → pause → delete |
+| 9 | `context: autoselect_variant` | `scraper/product.py` | `_submit_jobs()` | Accurate buybox pricing for variant products |
+| 10 | Oxylabs Scheduler | `scripts/test_scheduler.py` | `client.create_schedule()` | Recurring jobs on cron schedule — tested: create → verify → pause → delete |
 
 ## Feature Details
 
@@ -43,10 +41,18 @@ By passing a filtered Amazon URL (`rh=n:7072561011,p_123:110955`), we apply cate
 ### 7. Async/Polling
 For 100 product pages, synchronous requests would be too slow. Async mode lets us submit all jobs quickly, then poll for completion. Jobs run in parallel on Oxylabs' side.
 
-### 8-10. Endpoint Architecture
-- **Realtime** (`realtime.oxylabs.io`) — synchronous, used for search and pricing
-- **Async submit** (`data.oxylabs.io`) — submit background jobs
-- **Async results** (`data.oxylabs.io/{id}/results`) — retrieve completed results
+### 8. Realtime Endpoint
+Used for search (Phase 1) and pricing (Phase 3). Synchronous — blocks until result is ready. Fast enough for these use cases (3-5 seconds).
+
+`POST https://realtime.oxylabs.io/v1/queries`
+
+### 7-Detail. Async/Polling Mode (three API calls, one feature)
+The async workflow uses three endpoints:
+- **Submit** (`POST https://data.oxylabs.io/v1/queries`) — creates background job, returns `job_id`
+- **Poll** (`GET https://data.oxylabs.io/v1/queries/{id}`) — check status (`pending` → `running` → `done`)
+- **Retrieve** (`GET https://data.oxylabs.io/v1/queries/{id}/results`) — fetch completed result
+
+All three are in `scraper/client.py`. Used for product pages (Phase 2) where 100 jobs run in parallel on Oxylabs' infrastructure.
 
 ### 12. autoselect_variant (Context Parameter)
 iPhones come in many storage/color variants. Without `autoselect_variant: true`, the API might return pricing for a different variant than the one shown. This parameter appends `th=1&psc=1` to get accurate buybox/pricing data for the primary variant.
