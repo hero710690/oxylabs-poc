@@ -27,7 +27,7 @@ def scrape_products(
     # FEATURE: Batch submission — submit all jobs concurrently, then poll all concurrently
     batches = [search_results[i:i + batch_size] for i in range(0, len(search_results), batch_size)]
     total_batches = len(batches)
-    logger.info(f"Submitting {len(search_results)} jobs across {total_batches} batches concurrently...")
+    logger.info(f"Submitting {len(search_results)} jobs in {total_batches} batch(es), all concurrently...")
 
     jobs = []
     with ThreadPoolExecutor(max_workers=total_batches) as executor:
@@ -64,9 +64,8 @@ def scrape_products(
 
 
 def _submit_jobs(client: OxylabsClient, items: List[SearchResult]) -> list:
-    """Submit async jobs for a list of search results. Returns list of {job_id, asin}."""
-    jobs = []
-    for item in items:
+    """Submit async jobs for a list of search results concurrently. Returns list of {job_id, asin}."""
+    def submit_one(item):
         # FEATURE: amazon_product source — individual product page data
         # FEATURE: parse: true — structured auto-parsed output
         # FEATURE: geo_location — US market
@@ -80,11 +79,18 @@ def _submit_jobs(client: OxylabsClient, items: List[SearchResult]) -> list:
             "geo_location": config.GEO_LOCATION,
             "context": [{"key": "autoselect_variant", "value": True}],
         }
-        try:
-            job = client.async_submit(payload)
-            jobs.append({"job_id": job["id"], "asin": item.asin})
-        except Exception as e:
-            logger.warning(f"Failed to submit job for ASIN {item.asin}: {e}")
+        job = client.async_submit(payload)
+        return {"job_id": job["id"], "asin": item.asin}
+
+    jobs = []
+    with ThreadPoolExecutor(max_workers=len(items)) as executor:
+        futures = {executor.submit(submit_one, item): item.asin for item in items}
+        for future in as_completed(futures):
+            asin = futures[future]
+            try:
+                jobs.append(future.result())
+            except Exception as e:
+                logger.warning(f"Failed to submit job for ASIN {asin}: {e}")
     return jobs
 
 
