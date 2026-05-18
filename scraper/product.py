@@ -69,7 +69,7 @@ def _submit_jobs(client: OxylabsClient, items: List[SearchResult]) -> list:
         return {"job_id": job["id"], "asin": item.asin}
 
     jobs = []
-    with ThreadPoolExecutor(max_workers=len(items)) as executor:
+    with ThreadPoolExecutor(max_workers=min(len(items), config.MAX_CONCURRENCY)) as executor:
         futures = {executor.submit(submit_one, item): item.asin for item in items}
         for future in as_completed(futures):
             asin = futures[future]
@@ -99,7 +99,7 @@ def _poll_all_jobs(client: OxylabsClient, jobs: list) -> Dict[str, ProductData]:
     if not jobs:
         return products
 
-    with ThreadPoolExecutor(max_workers=len(jobs)) as executor:
+    with ThreadPoolExecutor(max_workers=min(len(jobs), config.MAX_CONCURRENCY)) as executor:
         futures = {executor.submit(poll_job, j): j["asin"] for j in jobs}
         for future in as_completed(futures):
             asin = futures[future]

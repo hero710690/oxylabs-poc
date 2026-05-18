@@ -22,6 +22,10 @@ RESULTS_LIMIT = 100
 # FEATURE: geo_location — lock results to US market (Oxylabs uses ZIP codes)
 GEO_LOCATION = "90210"
 
+# Max concurrent threads for job submission and polling.
+# Oxylabs doesn't publish a hard concurrency limit — 50 is a safe default.
+# Tune upward if no errors are observed in production.
+MAX_CONCURRENCY = 50
 POLL_INTERVAL = 5  # seconds between status checks
 POLL_TIMEOUT = 300  # max seconds to wait for a batch
 
