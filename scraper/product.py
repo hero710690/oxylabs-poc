@@ -50,7 +50,7 @@ def scrape_products(
 
 
 def _submit_jobs(client: OxylabsClient, items: List[SearchResult]) -> list:
-    """Submit async jobs for a list of search results concurrently. Returns list of {job_id, asin}."""
+    """Submit async jobs respecting the Oxylabs rate limit (MAX_JOBS_PER_SECOND)."""
     def submit_one(item):
         # FEATURE: amazon_product source — individual product page data
         # FEATURE: parse: true — structured auto-parsed output
@@ -68,15 +68,21 @@ def _submit_jobs(client: OxylabsClient, items: List[SearchResult]) -> list:
         job = client.async_submit(payload)
         return {"job_id": job["id"], "asin": item.asin}
 
+    # Submit in chunks of MAX_JOBS_PER_SECOND with 1s spacing to stay within rate limit.
+    # Oxylabs Micro plan: 50 jobs/s. See: developers.oxylabs.io rate-limits
     jobs = []
-    with ThreadPoolExecutor(max_workers=min(len(items), config.MAX_CONCURRENCY)) as executor:
-        futures = {executor.submit(submit_one, item): item.asin for item in items}
-        for future in as_completed(futures):
-            asin = futures[future]
-            try:
-                jobs.append(future.result())
-            except Exception as e:
-                logger.warning(f"Failed to submit job for ASIN {asin}: {e}")
+    chunks = [items[i:i + config.MAX_JOBS_PER_SECOND] for i in range(0, len(items), config.MAX_JOBS_PER_SECOND)]
+    for idx, chunk in enumerate(chunks):
+        if idx > 0:
+            time.sleep(1)
+        with ThreadPoolExecutor(max_workers=len(chunk)) as executor:
+            futures = {executor.submit(submit_one, item): item.asin for item in chunk}
+            for future in as_completed(futures):
+                asin = futures[future]
+                try:
+                    jobs.append(future.result())
+                except Exception as e:
+                    logger.warning(f"Failed to submit job for ASIN {asin}: {e}")
     return jobs
 
 
@@ -99,7 +105,7 @@ def _poll_all_jobs(client: OxylabsClient, jobs: list) -> Dict[str, ProductData]:
     if not jobs:
         return products
 
-    with ThreadPoolExecutor(max_workers=min(len(jobs), config.MAX_CONCURRENCY)) as executor:
+    with ThreadPoolExecutor(max_workers=len(jobs)) as executor:
         futures = {executor.submit(poll_job, j): j["asin"] for j in jobs}
         for future in as_completed(futures):
             asin = futures[future]
