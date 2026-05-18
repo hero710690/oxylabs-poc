@@ -22,11 +22,11 @@ RESULTS_LIMIT = 100
 # FEATURE: geo_location — lock results to US market (Oxylabs uses ZIP codes)
 GEO_LOCATION = "90210"
 
-# Oxylabs rate limit: 50 jobs/s on Micro plan, 100/s on Business+.
+# Oxylabs rate limit: 50 jobs/s on Micro/Starter, 100/s on Business and above.
 # See: https://developers.oxylabs.io/products/web-scraper-api/usage-and-billing/rate-limits
 MAX_JOBS_PER_SECOND = 50
 POLL_INTERVAL = 5  # seconds between status checks
-POLL_TIMEOUT = 300  # max seconds to wait for a batch
+POLL_TIMEOUT = 300  # max seconds to wait for an async job
 
 # Retry config
 MAX_RETRIES = 3

@@ -24,7 +24,7 @@ def main():
     print("1. Creating schedule...")
     payload = {
         "cron": "0 * * * *",
-        "end_time": "2026-05-16 00:00:00",
+        "end_time": "2027-01-01 00:00:00",
         "items": [
             {
                 "source": "amazon_search",

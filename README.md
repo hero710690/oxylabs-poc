@@ -96,7 +96,7 @@ oxylabs-poc/
 ├── scraper/
 │   ├── client.py              # Oxylabs API wrapper (retry, async, realtime)
 │   ├── search.py              # Phase 1: brand-filtered search (Apple iPhones only)
-│   ├── product.py             # Phase 2: batch async product pages
+│   ├── product.py             # Phase 2: async/polling product pages (100 concurrent)
 │   └── pricing.py             # Phase 3: multi-seller pricing
 ├── scripts/
 │   ├── report.py              # HTML report/dashboard generator
@@ -168,7 +168,7 @@ oxylabs-poc/
 
 ```bash
 pytest tests/ -v
-# 18 tests covering search, product, pricing, client, models, and main
+# 18 tests covering search, product, client, models, and main
 ```
 
 ## Documentation

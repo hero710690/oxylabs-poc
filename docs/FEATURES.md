@@ -38,26 +38,25 @@ By setting `parse: true`, Oxylabs handles all the anti-bot logic AND returns cle
 ### 6. URL-based Filtering
 By passing a filtered Amazon URL (`rh=n:7072561011,p_123:110955`), we apply category (Cell Phones) and brand (Apple) filters at the source — meaning Oxylabs only returns actual iPhones. This eliminates post-processing waste and ensures the client pays only for relevant results. We paginate across 5-7 pages to collect 100+ listings.
 
-### 7. Async/Polling
+### 7. Async/Polling Mode
 For 100 product pages, synchronous requests would be too slow. Async mode lets us submit all jobs quickly, then poll for completion. Jobs run in parallel on Oxylabs' side.
+
+The workflow uses three endpoints (all in `scraper/client.py`):
+- **Submit** (`POST https://data.oxylabs.io/v1/queries`) — creates background job, returns `job_id`
+- **Poll** (`GET https://data.oxylabs.io/v1/queries/{id}`) — check status (`pending` → `running` → `done`)
+- **Retrieve** (`GET https://data.oxylabs.io/v1/queries/{id}/results`) — fetch completed result
+
+Used for product pages (Phase 2) where 100 jobs run in parallel on Oxylabs' infrastructure.
 
 ### 8. Realtime Endpoint
 Used for search (Phase 1) and pricing (Phase 3). Synchronous — blocks until result is ready. Fast enough for these use cases (3-5 seconds).
 
 `POST https://realtime.oxylabs.io/v1/queries`
 
-### 7-Detail. Async/Polling Mode (three API calls, one feature)
-The async workflow uses three endpoints:
-- **Submit** (`POST https://data.oxylabs.io/v1/queries`) — creates background job, returns `job_id`
-- **Poll** (`GET https://data.oxylabs.io/v1/queries/{id}`) — check status (`pending` → `running` → `done`)
-- **Retrieve** (`GET https://data.oxylabs.io/v1/queries/{id}/results`) — fetch completed result
-
-All three are in `scraper/client.py`. Used for product pages (Phase 2) where 100 jobs run in parallel on Oxylabs' infrastructure.
-
-### 12. autoselect_variant (Context Parameter)
+### 9. autoselect_variant (Context Parameter)
 iPhones come in many storage/color variants. Without `autoselect_variant: true`, the API might return pricing for a different variant than the one shown. This parameter appends `th=1&psc=1` to get accurate buybox/pricing data for the primary variant.
 
-### 13. Oxylabs Scheduler
+### 10. Oxylabs Scheduler
 Oxylabs runs scraping jobs on a recurring cron schedule — no scheduling infrastructure needed on the client side. Tested in `scripts/test_scheduler.py` (create → verify → pause → delete — all confirmed working).
 
 **API:** `POST https://data.oxylabs.io/v1/schedules`
@@ -69,9 +68,8 @@ Oxylabs runs scraping jobs on a recurring cron schedule — no scheduling infras
   "end_time": "2027-01-01 00:00:00",
   "items": [
     {
-      "source": "amazon_search",
-      "query": "iPhone",
-      "domain": "com",
+      "source": "amazon",
+      "url": "https://www.amazon.com/s?k=iphone&i=mobile&rh=n%3A7072561011%2Cp_123%3A110955",
       "parse": true,
       "geo_location": "90210"
     }
