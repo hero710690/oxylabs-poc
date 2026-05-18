@@ -26,13 +26,12 @@ Scheduler triggers hourly run
 | 4 | `parse: true` | All scraper modules | Structured auto-parsed JSON (no HTML parsing) |
 | 5 | `geo_location` | All scraper modules | Lock results to US market (ZIP code) |
 | 6 | URL-based filtering | `scraper/search.py` | Category + brand filter via Amazon URL params |
-| 7 | Async/Polling mode | `scraper/product.py` | Non-blocking batch product scraping |
-| 8 | Batch submission | `scraper/product.py` | Submit all 100 product jobs concurrently |
-| 9 | Realtime endpoint | `scraper/client.py` | Synchronous search + pricing requests |
-| 10 | Async endpoint | `scraper/client.py` | Background job submission + results retrieval |
+| 7 | Async/Polling mode | `scraper/product.py` | Non-blocking product scraping — submit jobs, poll for completion |
+| 8 | Realtime endpoint | `scraper/client.py` | Synchronous search + pricing requests |
+| 9 | Async endpoint | `scraper/client.py` | Background job submission |
+| 10 | Async results retrieval | `scraper/client.py` | Fetch completed job results from separate endpoint |
 | 11 | `context: autoselect_variant` | `scraper/product.py` | Accurate buybox pricing for variant products |
-| 12 | Async results retrieval | `scraper/client.py` | Fetch completed job results from separate endpoint |
-| 13 | Oxylabs Scheduler | `scripts/test_scheduler.py` | Recurring jobs on cron schedule — tested: create → verify → pause → delete |
+| 12 | Oxylabs Scheduler | `scripts/test_scheduler.py` | Recurring jobs on cron schedule — tested: create → verify → pause → delete |
 
 See [docs/FEATURES.md](docs/FEATURES.md) for detailed explanations of each feature.
 
@@ -109,7 +108,7 @@ oxylabs-poc/
 ├── output/                    # Timestamped JSON outputs + HTML report
 ├── tests/                     # Unit tests (18 tests)
 └── docs/
-    ├── FEATURES.md            # Feature → code mapping (13 features)
+    ├── FEATURES.md            # Feature → code mapping (12 features)
     ├── PRICING.md             # Cost breakdown (~$49/month on Micro plan)
     └── FEEDBACK.md            # API developer experience feedback
 ```
@@ -176,7 +175,7 @@ pytest tests/ -v
 
 ## Documentation
 
-- [FEATURES.md](docs/FEATURES.md) — Detailed feature usage guide (13 features)
+- [FEATURES.md](docs/FEATURES.md) — Detailed feature usage guide (12 features)
 - [PRICING.md](docs/PRICING.md) — Cost calculation (~$49/month Micro plan) and plan recommendation
 - [FEEDBACK.md](docs/FEEDBACK.md) — Developer experience feedback for Oxylabs
 - Presentation slides — attached separately as PDF

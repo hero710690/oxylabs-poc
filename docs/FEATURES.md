@@ -12,13 +12,12 @@ This document maps every Oxylabs feature used in this PoC to its location in the
 | 4 | `parse: true` | All scraper modules | All payloads | Structured auto-parsed JSON output (no HTML parsing) |
 | 5 | `geo_location` | All scraper modules | All payloads | Locks results to US market (ZIP code: 90210) |
 | 6 | URL-based filtering | `scraper/search.py` | `search_iphones()` | Category + brand filter via Amazon URL params (zero waste) |
-| 7 | Async/Polling mode | `scraper/product.py` | `_poll_until_done()` | Non-blocking batch product scraping |
-| 8 | Batch submission | `scraper/product.py` | `_submit_jobs()` | Submits all jobs concurrently, respecting the 50 jobs/s rate limit |
-| 9 | Realtime endpoint | `scraper/client.py` | `realtime()` | Synchronous search + pricing requests |
-| 10 | Async endpoint | `scraper/client.py` | `async_submit()` | Background job submission |
-| 11 | Async results retrieval | `scraper/client.py` | `async_get_results()` | Fetch completed job results |
-| 12 | `context: autoselect_variant` | `scraper/product.py` | `_submit_jobs()` | Accurate buybox pricing for variant products |
-| 13 | Oxylabs Scheduler | `scripts/test_scheduler.py` | `client.create_schedule()` | Recurring jobs on cron schedule — tested: create → verify → pause → delete |
+| 7 | Async/Polling mode | `scraper/product.py` | `_poll_until_done()` | Non-blocking product scraping — submit jobs, poll for completion |
+| 8 | Realtime endpoint | `scraper/client.py` | `realtime()` | Synchronous search + pricing requests |
+| 9 | Async endpoint | `scraper/client.py` | `async_submit()` | Background job submission |
+| 10 | Async results retrieval | `scraper/client.py` | `async_get_results()` | Fetch completed job results |
+| 11 | `context: autoselect_variant` | `scraper/product.py` | `_submit_jobs()` | Accurate buybox pricing for variant products |
+| 12 | Oxylabs Scheduler | `scripts/test_scheduler.py` | `client.create_schedule()` | Recurring jobs on cron schedule — tested: create → verify → pause → delete |
 
 ## Feature Details
 
@@ -44,10 +43,7 @@ By passing a filtered Amazon URL (`rh=n:7072561011,p_123:110955`), we apply cate
 ### 7. Async/Polling
 For 100 product pages, synchronous requests would be too slow. Async mode lets us submit all jobs quickly, then poll for completion. Jobs run in parallel on Oxylabs' side.
 
-### 8. Batch Submission
-All 100 jobs are submitted concurrently in chunks of up to 50 per second — matching the documented Oxylabs rate limit for the Micro plan (50 jobs/s). This is controlled by `MAX_JOBS_PER_SECOND` in `config.py` and scales automatically if `RESULTS_LIMIT` is increased. See: https://developers.oxylabs.io/products/web-scraper-api/usage-and-billing/rate-limits
-
-### 9-11. Endpoint Architecture
+### 8-10. Endpoint Architecture
 - **Realtime** (`realtime.oxylabs.io`) — synchronous, used for search and pricing
 - **Async submit** (`data.oxylabs.io`) — submit background jobs
 - **Async results** (`data.oxylabs.io/{id}/results`) — retrieve completed results
