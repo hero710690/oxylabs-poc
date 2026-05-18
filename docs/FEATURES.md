@@ -7,17 +7,17 @@ This document maps every Oxylabs feature used in this PoC to its location in the
 | # | Feature | File | Function | Purpose |
 |---|---------|------|----------|---------|
 | 1 | `amazon` source (URL) | `scraper/search.py` | `search_iphones()` | Scrape brand-filtered search results (Apple iPhones only) |
-| 2 | `amazon_product` source | `scraper/product.py` | `_process_batch()` | Individual product page data extraction |
+| 2 | `amazon_product` source | `scraper/product.py` | `_submit_jobs()` | Individual product page data extraction |
 | 3 | `amazon_pricing` source | `scraper/pricing.py` | `get_pricing()` | All seller offers for an ASIN (price intelligence) |
 | 4 | `parse: true` | All scraper modules | All payloads | Structured auto-parsed JSON output (no HTML parsing) |
 | 5 | `geo_location` | All scraper modules | All payloads | Locks results to US market (ZIP code: 90210) |
 | 6 | URL-based filtering | `scraper/search.py` | `search_iphones()` | Category + brand filter via Amazon URL params (zero waste) |
 | 7 | Async/Polling mode | `scraper/product.py` | `_poll_until_done()` | Non-blocking batch product scraping |
-| 8 | Batch submission | `scraper/product.py` | `scrape_products()` | Processes 100 products in chunks of 10 |
+| 8 | Batch submission | `scraper/product.py` | `_submit_jobs()` | Submits all jobs concurrently, respecting the 50 jobs/s rate limit |
 | 9 | Realtime endpoint | `scraper/client.py` | `realtime()` | Synchronous search + pricing requests |
 | 10 | Async endpoint | `scraper/client.py` | `async_submit()` | Background job submission |
 | 11 | Async results retrieval | `scraper/client.py` | `async_get_results()` | Fetch completed job results |
-| 12 | `context: autoselect_variant` | `scraper/product.py` | `_process_batch()` | Accurate buybox pricing for variant products |
+| 12 | `context: autoselect_variant` | `scraper/product.py` | `_submit_jobs()` | Accurate buybox pricing for variant products |
 | 13 | Oxylabs Scheduler | `scripts/test_scheduler.py` | `client.create_schedule()` | Recurring jobs on cron schedule — tested: create → verify → pause → delete |
 
 ## Feature Details
@@ -56,9 +56,11 @@ for relevant results. We paginate across 5-7 pages to collect 100+ listings.
 For 100 product pages, synchronous requests would be too slow. Async mode lets us
 submit all jobs quickly, then poll for completion. Jobs run in parallel on Oxylabs' side.
 
-### 8. Batch Processing
-We chunk 100 products into groups of 10. This balances throughput with manageability —
-we can track progress, handle failures per-batch, and avoid overwhelming the API.
+### 8. Batch Submission
+All 100 jobs are submitted concurrently in chunks of up to 50 per second — matching
+the documented Oxylabs rate limit for the Micro plan (50 jobs/s). This is controlled
+by `MAX_JOBS_PER_SECOND` in `config.py` and scales automatically if `RESULTS_LIMIT`
+is increased. See: https://developers.oxylabs.io/products/web-scraper-api/usage-and-billing/rate-limits
 
 ### 9-11. Endpoint Architecture
 - **Realtime** (`realtime.oxylabs.io`) — synchronous, used for search and pricing

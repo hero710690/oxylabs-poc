@@ -11,7 +11,7 @@ Getting started was straightforward — username/password auth, simple JSON payl
 - **Structured parsing is the killer feature.** Setting `parse: true` and getting back a clean JSON object with 50+ fields per product felt like magic. No HTML parsing, no CSS selectors to maintain, no worrying about layout changes breaking things.
 - **Anti-bot handling is invisible.** Zero CAPTCHAs, zero blocks across 100+ product requests. It just works. This is exactly the value prop for a team like TechNovaAI who doesn't want to deal with this.
 - **Response speed.** Search results in 3-4 seconds, product pages in 5-15 seconds via async. Fast enough to feel interactive during development.
-- **Async job reliability.** Submitted 100 product jobs across 10 batches — every single one completed without faulting. The pending → running → done state machine is clean.
+- **Async job reliability.** Submitted 100 product jobs concurrently (50/s chunks to respect the documented rate limit) — every single one completed without faulting. The pending → running → done state machine is clean.
 - **Rich data.** The `product_details` field alone has 50+ fields per iPhone listing. `amazon_pricing` gives every seller's offer in one call. More data than we expected.
 - **Feature depth.** `autoselect_variant`, `context` parameters, multiple sort options — once you learn these exist, they unlock precise control over what data you get.
 
