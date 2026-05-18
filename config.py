@@ -22,11 +22,6 @@ RESULTS_LIMIT = 100
 # FEATURE: geo_location — lock results to US market (Oxylabs uses ZIP codes)
 GEO_LOCATION = "90210"
 
-# Batch config
-# 10 is a conservative default — Oxylabs doesn't publish a hard concurrency limit.
-# Batches are submitted concurrently, so this controls burst size rather than throughput.
-# Tune upward (e.g. 25, 50) if no rate-limit errors are observed in production.
-BATCH_SIZE = 100  # product pages per batch
 POLL_INTERVAL = 5  # seconds between status checks
 POLL_TIMEOUT = 300  # max seconds to wait for a batch
 

@@ -13,31 +13,17 @@ logger = logging.getLogger(__name__)
 def scrape_products(
     search_results: List[SearchResult],
     client: OxylabsClient = None,
-    batch_size: int = config.BATCH_SIZE,
 ) -> Dict[str, ProductData]:
     """
     Phase 2: Scrape individual product pages using async/polling mode.
-    Submits all jobs upfront, then polls all concurrently.
-    batch_size controls how many jobs are submitted at once to avoid overwhelming the API.
+    Submits all jobs concurrently upfront, then polls all concurrently.
     Returns dict keyed by ASIN for easy merging with search results.
     """
     if client is None:
         client = OxylabsClient()
 
-    # FEATURE: Batch submission — submit all jobs concurrently, then poll all concurrently
-    batches = [search_results[i:i + batch_size] for i in range(0, len(search_results), batch_size)]
-    total_batches = len(batches)
-    logger.info(f"Submitting {len(search_results)} jobs in {total_batches} batch(es), all concurrently...")
-
-    jobs = []
-    with ThreadPoolExecutor(max_workers=total_batches) as executor:
-        futures = {executor.submit(_submit_jobs, client, batch): idx for idx, batch in enumerate(batches)}
-        for future in as_completed(futures):
-            try:
-                jobs.extend(future.result())
-            except Exception as e:
-                logger.warning(f"Batch submission failed: {e}")
-
+    logger.info(f"Submitting {len(search_results)} jobs concurrently...")
+    jobs = _submit_jobs(client, search_results)
     logger.info(f"All {len(jobs)} jobs submitted, polling concurrently...")
     all_products = _poll_all_jobs(client, jobs)
 

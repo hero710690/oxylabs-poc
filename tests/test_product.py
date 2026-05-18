@@ -69,7 +69,7 @@ def test_scrape_products_batches_requests():
     mock_client.async_get_results.return_value = MOCK_RESULTS_RESPONSE
 
     search_results = [_make_search_result(f"B0TEST{i:03d}", i) for i in range(1, 21)]
-    products = scrape_products(search_results, client=mock_client, batch_size=10)
+    products = scrape_products(search_results, client=mock_client)
 
     # 20 products → 20 async_submit calls
     assert mock_client.async_submit.call_count == 20
@@ -82,7 +82,7 @@ def test_scrape_products_returns_product_data():
     mock_client.async_get_results.return_value = MOCK_RESULTS_RESPONSE
 
     search_results = [_make_search_result("B0TEST001", 1)]
-    products = scrape_products(search_results, client=mock_client, batch_size=10)
+    products = scrape_products(search_results, client=mock_client)
 
     assert len(products) == 1
     assert "B0TEST001" in products

@@ -40,7 +40,7 @@ See [docs/FEATURES.md](docs/FEATURES.md) for detailed explanations of each featu
 
 2. **System crontab over APScheduler** — Simpler, no extra dependency, battle-tested. The Oxylabs Scheduler was explored but can't chain jobs (Phase 2 needs ASINs from Phase 1) — documented as a feature request in [docs/FEEDBACK.md](docs/FEEDBACK.md).
 
-3. **Parallel submission and polling** — All 10 batches submitted concurrently, all 100 jobs polled simultaneously. Total runtime ~23 seconds (down from ~6 minutes sequential).
+3. **Parallel submission and polling** — All 100 jobs submitted concurrently, all 100 jobs polled simultaneously. Total runtime ~23 seconds (down from ~6 minutes sequential).
 
 4. **Async/Polling for product pages, Realtime for search + pricing** — Product pages take 5–20 seconds each; async mode lets all 100 run in parallel. Search and pricing are fast enough for realtime.
 

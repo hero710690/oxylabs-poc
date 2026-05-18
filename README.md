@@ -9,7 +9,7 @@ Built for **TechNovaAI** — a prospective client entering the U.S. smartphone r
 ```
 Scheduler triggers hourly run
   → Phase 1: Brand-filtered search (Cell Phones + Apple → 100 iPhones only)
-  → Phase 2: Batch async amazon_product (10 at a time, poll for results)
+  → Phase 2: Async amazon_product (all 100 submitted concurrently, poll for results)
   → Phase 3: amazon_pricing for top 5 ASINs (all seller offers)
   → Validate with Pydantic models
   → Merge search metadata + product page data + pricing intelligence
@@ -27,7 +27,7 @@ Scheduler triggers hourly run
 | 5 | `geo_location` | All scraper modules | Lock results to US market (ZIP code) |
 | 6 | URL-based filtering | `scraper/search.py` | Category + brand filter via Amazon URL params |
 | 7 | Async/Polling mode | `scraper/product.py` | Non-blocking batch product scraping |
-| 8 | Batch submission | `scraper/product.py` | Process 100 products in chunks of 10 |
+| 8 | Batch submission | `scraper/product.py` | Submit all 100 product jobs concurrently |
 | 9 | Realtime endpoint | `scraper/client.py` | Synchronous search + pricing requests |
 | 10 | Async endpoint | `scraper/client.py` | Background job submission + results retrieval |
 | 11 | `context: autoselect_variant` | `scraper/product.py` | Accurate buybox pricing for variant products |
