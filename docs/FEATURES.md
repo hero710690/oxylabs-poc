@@ -23,44 +23,29 @@ This document maps every Oxylabs feature used in this PoC to its location in the
 ## Feature Details
 
 ### 1. amazon source with URL (Realtime)
-Used for the search phase. We pass a pre-filtered Amazon search URL that includes
-category (Cell Phones) and brand (Apple) filters — this ensures every result is an
-actual iPhone, with zero wasted requests on accessories or other brands.
-The `parse: true` flag means Oxylabs returns structured JSON with organic/paid results
-already separated — includes rating, reviews, best seller badges, and sales volume.
+Used for the search phase. We pass a pre-filtered Amazon search URL that includes category (Cell Phones) and brand (Apple) filters — this ensures every result is an actual iPhone, with zero wasted requests on accessories or other brands.
+The `parse: true` flag means Oxylabs returns structured JSON with organic/paid results already separated — includes rating, reviews, best seller badges, and sales volume.
 
 ### 2. amazon_product (Async)
-Used for product page scraping. Each product is submitted as an async job to avoid
-blocking. Returns 50+ fields including specifications, delivery info, sales rank, and brand.
+Used for product page scraping. Each product is submitted as an async job to avoid blocking. Returns 50+ fields including specifications, delivery info, sales rank, and brand.
 
 ### 3. amazon_pricing (Realtime)
-Fetches all third-party seller offers for a specific ASIN. Returns each seller's price,
-condition, shipping cost, and fulfillment method. Used on top 5 listings for competitive
-price intelligence.
+Fetches all third-party seller offers for a specific ASIN. Returns each seller's price, condition, shipping cost, and fulfillment method. Used on top 5 listings for competitive price intelligence.
 
 ### 4. Structured Parsing
-By setting `parse: true`, Oxylabs handles all the anti-bot logic AND returns clean
-structured data. Without this, we'd need to parse raw HTML ourselves.
+By setting `parse: true`, Oxylabs handles all the anti-bot logic AND returns clean structured data. Without this, we'd need to parse raw HTML ourselves.
 
 ### 5. Geo-targeting
-`geo_location: "90210"` (ZIP code) ensures we see US-specific pricing, Prime eligibility,
-and delivery estimates — critical for TechNovaAI's US market analysis.
+`geo_location: "90210"` (ZIP code) ensures we see US-specific pricing, Prime eligibility, and delivery estimates — critical for TechNovaAI's US market analysis.
 
 ### 6. URL-based Filtering
-By passing a filtered Amazon URL (`rh=n:7072561011,p_123:110955`), we apply category
-(Cell Phones) and brand (Apple) filters at the source — meaning Oxylabs only returns
-actual iPhones. This eliminates post-processing waste and ensures the client pays only
-for relevant results. We paginate across 5-7 pages to collect 100+ listings.
+By passing a filtered Amazon URL (`rh=n:7072561011,p_123:110955`), we apply category (Cell Phones) and brand (Apple) filters at the source — meaning Oxylabs only returns actual iPhones. This eliminates post-processing waste and ensures the client pays only for relevant results. We paginate across 5-7 pages to collect 100+ listings.
 
 ### 7. Async/Polling
-For 100 product pages, synchronous requests would be too slow. Async mode lets us
-submit all jobs quickly, then poll for completion. Jobs run in parallel on Oxylabs' side.
+For 100 product pages, synchronous requests would be too slow. Async mode lets us submit all jobs quickly, then poll for completion. Jobs run in parallel on Oxylabs' side.
 
 ### 8. Batch Submission
-All 100 jobs are submitted concurrently in chunks of up to 50 per second — matching
-the documented Oxylabs rate limit for the Micro plan (50 jobs/s). This is controlled
-by `MAX_JOBS_PER_SECOND` in `config.py` and scales automatically if `RESULTS_LIMIT`
-is increased. See: https://developers.oxylabs.io/products/web-scraper-api/usage-and-billing/rate-limits
+All 100 jobs are submitted concurrently in chunks of up to 50 per second — matching the documented Oxylabs rate limit for the Micro plan (50 jobs/s). This is controlled by `MAX_JOBS_PER_SECOND` in `config.py` and scales automatically if `RESULTS_LIMIT` is increased. See: https://developers.oxylabs.io/products/web-scraper-api/usage-and-billing/rate-limits
 
 ### 9-11. Endpoint Architecture
 - **Realtime** (`realtime.oxylabs.io`) — synchronous, used for search and pricing
@@ -68,14 +53,10 @@ is increased. See: https://developers.oxylabs.io/products/web-scraper-api/usage-
 - **Async results** (`data.oxylabs.io/{id}/results`) — retrieve completed results
 
 ### 12. autoselect_variant (Context Parameter)
-iPhones come in many storage/color variants. Without `autoselect_variant: true`,
-the API might return pricing for a different variant than the one shown. This parameter
-appends `th=1&psc=1` to get accurate buybox/pricing data for the primary variant.
+iPhones come in many storage/color variants. Without `autoselect_variant: true`, the API might return pricing for a different variant than the one shown. This parameter appends `th=1&psc=1` to get accurate buybox/pricing data for the primary variant.
 
 ### 13. Oxylabs Scheduler
-Oxylabs runs scraping jobs on a recurring cron schedule — no scheduling
-infrastructure needed on the client side. Tested in `scripts/test_scheduler.py`
-(create → verify → pause → delete — all confirmed working).
+Oxylabs runs scraping jobs on a recurring cron schedule — no scheduling infrastructure needed on the client side. Tested in `scripts/test_scheduler.py` (create → verify → pause → delete — all confirmed working).
 
 **API:** `POST https://data.oxylabs.io/v1/schedules`
 
